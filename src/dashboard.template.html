@@ -1,0 +1,1264 @@
+<title>UK HE Pound for Pound</title>
+<meta name="description" content="Where each £1 of income goes across UK higher education providers, benchmarked against the University of Reading. HESA Finance open data.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&display=swap">
+<style>
+/* Layout: a management-accounts pack. Sticky filter ledger on top, summary tiles, then schedules (£1 split, distribution, trend, investment, league, subjects). Reading is the one accent colour on every chart. */
+:root {
+  --bg: #f4f5f6;
+  --surface: #ffffff;
+  --ink: #14171b;
+  --ink-2: #4a515a;
+  --ink-3: #737b85;
+  --rule: #dde0e4;
+  --grid: #eceef0;
+  --chip: #eef0f2;
+  --accent: #a3134f;          /* Reading / benchmark */
+  --accent-soft: #f7e4ec;
+  --group: #2a78d6;
+  --sector: #8d949d;
+  --good: #0a7d0a;
+  --critical: #c42f2f;
+  --c1: #2a78d6; --c2: #eb6834; --c3: #1baf7a; --c4: #eda100;
+  --c5: #e87ba4; --c6: #008300; --c7: #4a3aa7; --c8: #e34948;
+  --font-display: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-data: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --r: 6px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #101214; --surface: #191c1f; --ink: #f1f3f5; --ink-2: #b8bec6; --ink-3: #8b929c;
+    --rule: #2b2f34; --grid: #23272b; --chip: #24282d; --accent: #f2689f; --accent-soft: #3b1626;
+    --group: #3987e5; --sector: #7d848d; --good: #3dbb3d; --critical: #ef6a6a;
+    --c1: #3987e5; --c2: #d95926; --c3: #199e70; --c4: #c98500;
+    --c5: #d55181; --c6: #008300; --c7: #9085e9; --c8: #e66767;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #101214; --surface: #191c1f; --ink: #f1f3f5; --ink-2: #b8bec6; --ink-3: #8b929c;
+  --rule: #2b2f34; --grid: #23272b; --chip: #24282d; --accent: #f2689f; --accent-soft: #3b1626;
+  --group: #3987e5; --sector: #7d848d; --good: #3dbb3d; --critical: #ef6a6a;
+  --c1: #3987e5; --c2: #d95926; --c3: #199e70; --c4: #c98500;
+  --c5: #d55181; --c6: #008300; --c7: #9085e9; --c8: #e66767;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 14px; line-height: 1.5; }
+.wrap { max-width: 1240px; margin: 0 auto; padding-inline: 20px; padding-block: 28px 64px; display: grid; gap: 28px; }
+h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; margin: 0; letter-spacing: -0.01em; }
+h1 { font-size: clamp(26px, 4vw, 38px); line-height: 1.1; }
+h2 { font-size: 21px; line-height: 1.2; }
+h3 { font-size: 16px; }
+p { margin: 0; }
+.lede { color: var(--ink-2); max-width: 70ch; font-size: 15px; }
+.eyebrow { font-size: 11px; letter-spacing: 0.09em; text-transform: uppercase; color: var(--ink-3); font-weight: 600; }
+.num { font-family: var(--font-data); font-variant-numeric: tabular-nums; }
+.bench { color: var(--accent); font-weight: 600; }
+header.top { display: grid; gap: 10px; }
+
+/* Filter ledger */
+.filters { background: var(--surface); border: 1px solid var(--rule); border-radius: var(--r); padding: 12px 14px; display: grid; gap: 10px; box-shadow: 0 6px 18px -14px rgba(0,0,0,.35); }
+.frow { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: flex-end; }
+.field { display: grid; gap: 4px; min-width: 0; }
+.field > span { font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-3); font-weight: 600; }
+select, input[type="search"], input[type="number"] { font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--rule); border-radius: 5px; padding: 6px 8px; min-width: 0; max-width: 100%; }
+select:focus-visible, input:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.seg { display: inline-flex; flex-wrap: nowrap; white-space: nowrap; max-width: 100%; border: 1px solid var(--rule); border-radius: 5px; overflow: hidden; }
+.seg button { font: inherit; font-size: 13px; border: 0; background: var(--bg); color: var(--ink-2); padding: 6px 10px; cursor: pointer; }
+.seg button + button { border-left: 1px solid var(--rule); }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--surface); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font: inherit; font-size: 13px; border: 1px solid var(--rule); background: var(--bg); color: var(--ink-2); padding: 4px 10px; border-radius: 999px; cursor: pointer; display: inline-flex; gap: 6px; align-items: center; }
+.chip[aria-pressed="true"] { background: var(--group); border-color: var(--group); color: #fff; }
+.chip .n { font-family: var(--font-data); font-size: 11px; opacity: .8; }
+.status-line { font-size: 12.5px; color: var(--ink-3); }
+details.custom { font-size: 13px; }
+details.custom summary { cursor: pointer; color: var(--ink-2); }
+.picker { margin-top: 8px; display: grid; gap: 8px; }
+.picker-list { max-height: 220px; overflow: auto; border: 1px solid var(--rule); border-radius: 5px; padding: 6px; display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 2px 12px; }
+.picker-list label { display: flex; gap: 6px; align-items: center; font-size: 12.5px; min-width: 0; }
+.picker-list label span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Sections */
+section.card { background: var(--surface); border: 1px solid var(--rule); border-radius: var(--r); padding: 20px; display: grid; gap: 14px; min-width: 0; }
+.sec-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px 20px; align-items: flex-end; }
+.sec-head > div { display: grid; gap: 4px; min-width: 0; max-width: 72ch; }
+.sec-head p { color: var(--ink-2); }
+.note { font-size: 12.5px; color: var(--ink-3); max-width: 90ch; }
+
+/* Tiles */
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; }
+.tile { border: 1px solid var(--rule); border-radius: var(--r); padding: 12px 14px; display: grid; gap: 6px; align-content: start; background: var(--surface); min-width: 0; }
+.tile .lab { font-size: 12.5px; color: var(--ink-2); font-weight: 500; display: flex; gap: 6px; align-items: center; }
+.sw { width: 10px; height: 10px; border-radius: 2px; flex: none; display: inline-block; }
+.tile .big { font-family: var(--font-data); font-size: 26px; font-weight: 500; line-height: 1.1; color: var(--ink); }
+.tile .big small { font-size: 14px; color: var(--ink-3); }
+.tile .cmp { display: grid; gap: 2px; font-size: 12px; color: var(--ink-2); }
+.tile .cmp .num { color: var(--ink); }
+.pill { display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px; font-weight: 600; border-radius: 999px; padding: 1px 8px; }
+.pill.sur { color: var(--good); border: 1px solid currentColor; }
+.pill.def { color: var(--critical); border: 1px solid currentColor; }
+
+/* Charts */
+.chart { width: 100%; min-width: 0; position: relative; }
+.chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+.chart .legend svg { display: inline-block; width: auto; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 12.5px; color: var(--ink-2); }
+.legend span { display: inline-flex; gap: 6px; align-items: center; }
+.ax { fill: var(--ink-3); font-size: 11px; font-family: var(--font-data); }
+.lbl { fill: var(--ink); font-size: 12.5px; font-family: var(--font-body); }
+.lbl2 { fill: var(--ink-2); font-size: 11.5px; font-family: var(--font-body); }
+.seglbl { font-size: 11px; font-family: var(--font-data); fill: #fff; pointer-events: none; }
+.tip { position: fixed; z-index: 50; pointer-events: none; background: var(--ink); color: var(--surface); font-size: 12.5px; padding: 8px 10px; border-radius: 5px; max-width: 280px; box-shadow: 0 8px 20px -8px rgba(0,0,0,.5); line-height: 1.4; }
+.tip b { font-weight: 600; }
+.tip .num { color: inherit; }
+.metric-pills { display: flex; flex-wrap: wrap; gap: 6px; }
+.metric-pills .chip[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--surface); }
+
+/* Tables */
+.tbl-wrap { overflow-x: auto; border: 1px solid var(--rule); border-radius: var(--r); max-height: 640px; overflow-y: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 13px; }
+th, td { padding: 7px 10px; text-align: right; border-bottom: 1px solid var(--grid); white-space: nowrap; }
+th:first-child, td:first-child { text-align: left; white-space: normal; min-width: 170px; }
+thead th { position: sticky; top: 0; background: var(--surface); font-size: 11.5px; color: var(--ink-2); font-weight: 600; border-bottom: 1px solid var(--rule); cursor: pointer; user-select: none; vertical-align: bottom; }
+thead th[aria-sort] { color: var(--ink); }
+td.num, td .num { font-family: var(--font-data); font-variant-numeric: tabular-nums; }
+tr.is-bench td { background: var(--accent-soft); }
+tr.is-bench td:first-child { box-shadow: inset 3px 0 0 var(--accent); font-weight: 600; }
+tr.avg td { background: var(--chip); font-weight: 500; }
+.delta { font-family: var(--font-data); font-size: 12px; color: var(--ink-2); }
+.tag { font-size: 11px; color: var(--ink-3); }
+.toolbar { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: flex-end; }
+
+.two { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 460px), 1fr)); gap: 20px; }
+.two > * { min-width: 0; }
+dl.defs { display: grid; grid-template-columns: minmax(150px, 220px) 1fr; gap: 6px 18px; margin: 0; font-size: 13px; }
+dl.defs dt { font-weight: 600; }
+dl.defs dd { margin: 0; color: var(--ink-2); }
+
+/* Tabs and line-by-line view */
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--rule); margin-bottom: -14px; }
+.tabs button { font: inherit; font-size: 15px; font-weight: 600; background: none; border: 0; border-bottom: 3px solid transparent; color: var(--ink-3); padding: 8px 14px 10px; cursor: pointer; }
+.tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
+.tabs button:hover { color: var(--ink); }
+.pane { display: grid; gap: 28px; min-width: 0; }
+.detail-cards { display: grid; gap: 28px; }
+.det td, .det th { padding: 6px 10px; }
+.det thead tr + tr th:first-child { min-width: 0; text-align: right; }
+.det tr.head td { font-weight: 600; background: var(--chip); border-top: 1px solid var(--rule); }
+.det tr.l1 td:first-child { padding-left: 22px; }
+.det tr.l2 td:first-child { padding-left: 40px; color: var(--ink-2); }
+.det tr.sub td { font-size: 11px; letter-spacing: 0.07em; text-transform: uppercase; color: var(--ink-3); font-weight: 600; padding-top: 14px; border-bottom: 1px solid var(--rule); }
+.det td.gap-more { color: var(--critical); }
+.det td.gap-less { color: var(--group); }
+.det td.rng { padding-block: 2px; }
+.det .rk { font-size: 12px; color: var(--ink-2); }
+.det-head { display: flex; flex-wrap: wrap; gap: 6px 24px; align-items: baseline; justify-content: space-between; }
+.det-head .figs { display: flex; flex-wrap: wrap; gap: 4px 18px; font-size: 13px; color: var(--ink-2); }
+.det-head .figs b { font-family: var(--font-data); font-weight: 500; color: var(--ink); }
+.key { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 12px; color: var(--ink-2); align-items: center; }
+@media (max-width: 640px) {
+  .wrap { padding-inline: 16px; }
+  dl.defs { grid-template-columns: 1fr; }
+  dl.defs dd { margin-bottom: 8px; }
+  section.card { padding: 14px; }
+}
+@media (prefers-reduced-motion: no-preference) { .chip, .seg button { transition: background .12s, color .12s; } }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="eyebrow">HESA Finance open data · UK higher education providers</div>
+    <h1>Where each £1 of income goes</h1>
+    <p class="lede">Expenditure per £1 of total income, split into academic delivery, support, management, estates and other operations, plus capital investment. <span class="bench" id="benchNameLede">University of Reading</span> is the benchmark on every view, against the sector and the mission groups you select.</p>
+  </header>
+
+  <div class="filters" role="region" aria-label="Filters">
+    <div class="frow">
+      <label class="field"><span>Year</span><select id="fYear"></select></label>
+      <label class="field"><span>Benchmark</span><select id="fBench"></select></label>
+      <div class="field"><span>Pension adjustments</span>
+        <div class="seg" id="fPension">
+          <button type="button" data-v="ex" aria-pressed="true">Excluded</button>
+          <button type="button" data-v="in" aria-pressed="false">Included</button>
+        </div>
+      </div>
+      <div class="field"><span>Providers</span>
+        <div class="seg" id="fSurplus">
+          <button type="button" data-v="all" aria-pressed="true">All</button>
+          <button type="button" data-v="surplus" aria-pressed="false">In surplus</button>
+          <button type="button" data-v="deficit" aria-pressed="false">In deficit</button>
+        </div>
+      </div>
+      <label class="field"><span>Nation</span><select id="fNation">
+        <option value="all">UK</option><option>England</option><option>Scotland</option><option>Wales</option><option>Northern Ireland</option>
+      </select></label>
+      <label class="field"><span>Min. income</span><select id="fMin">
+        <option value="0">Any size</option><option value="10000">£10m+</option><option value="20000" selected>£20m+</option><option value="50000">£50m+</option><option value="100000">£100m+</option><option value="250000">£250m+</option>
+      </select></label>
+      <div class="field"><span>Averages</span>
+        <div class="seg" id="fMethod">
+          <button type="button" data-v="mean" aria-pressed="true" title="Each provider counts equally">Provider average</button>
+          <button type="button" data-v="pooled" aria-pressed="false" title="Total £ across the group, so large providers weigh more">Pooled £</button>
+        </div>
+      </div>
+    </div>
+    <div class="field"><span>Comparator groups (combine as many as you like)</span><div class="chips" id="fGroups"></div></div>
+    <details class="custom" id="customBox">
+      <summary>Build a custom peer set</summary>
+      <div class="picker">
+        <input type="search" id="pickSearch" placeholder="Search providers" aria-label="Search providers">
+        <div class="picker-list" id="pickList"></div>
+      </div>
+    </details>
+    <div class="status-line" id="statusLine"></div>
+  </div>
+
+  <nav class="tabs" role="tablist" aria-label="Views">
+    <button type="button" role="tab" id="tab-overview" data-tab="overview" aria-selected="true" aria-controls="pane-overview">Overview</button>
+    <button type="button" role="tab" id="tab-detail" data-tab="detail" aria-selected="false" aria-controls="pane-detail">Institution detail</button>
+    <button type="button" role="tab" id="tab-subjects" data-tab="subjects" aria-selected="false" aria-controls="pane-subjects">Subjects</button>
+  </nav>
+
+  <div class="pane" id="pane-overview" role="tabpanel" aria-labelledby="tab-overview">
+  <section class="card" aria-labelledby="h-summary">
+    <div class="sec-head"><div>
+      <div class="eyebrow">Summary</div>
+      <h2 id="h-summary"><span class="bench js-bench">Reading</span> per £1 of income</h2>
+    </div><div id="benchStatus"></div></div>
+    <div class="tiles" id="tiles"></div>
+  </section>
+
+  <section class="card" aria-labelledby="h-split">
+    <div class="sec-head">
+      <div>
+        <div class="eyebrow">Spend per £1 of income</div>
+        <h2 id="h-split">The £1 split</h2>
+        <p>Each bar is £1 of income. What isn't spent is the surplus; a bar running past the £1 line is a deficit.</p>
+      </div>
+      <div class="seg" id="fDetail">
+        <button type="button" data-v="0" aria-pressed="true">5 headings</button>
+        <button type="button" data-v="1" aria-pressed="false">8 HESA activities</button>
+      </div>
+    </div>
+    <div class="legend" id="splitLegend"></div>
+    <div class="chart" id="splitChart"></div>
+    <div class="tbl-wrap" style="max-height:none"><table id="splitTable"></table></div>
+  </section>
+
+  <section class="card" aria-labelledby="h-dist">
+    <div class="sec-head"><div>
+      <div class="eyebrow">Distribution</div>
+      <h2 id="h-dist">Where <span class="js-bench bench">Reading</span> sits</h2>
+      <p>Every provider in each comparator set, in pence per £1 of income. The tick on each row is that set's median.</p>
+    </div></div>
+    <div class="metric-pills" id="metricPills"></div>
+    <div class="chart" id="stripChart"></div>
+  </section>
+
+  <section class="card" aria-labelledby="h-trend">
+    <div class="sec-head"><div>
+      <div class="eyebrow">Trend · same filters applied in every year</div>
+      <h2 id="h-trend"><span id="trendTitle">Academic delivery</span> over time</h2>
+    </div></div>
+    <div class="legend" id="trendLegend"></div>
+    <div class="chart" id="trendChart"></div>
+  </section>
+
+  <section class="card" aria-labelledby="h-inv">
+    <div class="sec-head">
+      <div>
+        <div class="eyebrow">Capital investment per £1 of income</div>
+        <h2 id="h-inv">Investment in estates and digital</h2>
+        <p>Capital spend is outside the income and expenditure figures above. Buildings covers estates investment. Equipment and digital covers equipment and intangible assets such as software.</p>
+      </div>
+      <div class="seg" id="fInv3">
+        <button type="button" data-v="3" aria-pressed="true">3-year average</button>
+        <button type="button" data-v="1" aria-pressed="false">Single year</button>
+      </div>
+    </div>
+    <div class="legend" id="invLegend"></div>
+    <div class="chart" id="invChart"></div>
+  </section>
+
+  <section class="card" aria-labelledby="h-league">
+    <div class="sec-head"><div>
+      <div class="eyebrow">Provider table · pence per £1 of income</div>
+      <h2 id="h-league">Every provider in the comparison</h2>
+      <p>Click a column heading to sort. Group averages and the benchmark stay pinned at the top.</p>
+    </div>
+    <label class="field"><span>Find</span><input type="search" id="leagueSearch" placeholder="Provider name"></label></div>
+    <div class="tbl-wrap"><table id="leagueTable"></table></div>
+  </section>
+
+  </div>
+
+  <div class="pane" id="pane-detail" role="tabpanel" aria-labelledby="tab-detail" hidden>
+    <section class="card" aria-labelledby="h-gap">
+      <div class="sec-head"><div>
+        <div class="eyebrow">Institution detail · <span id="gapEyebrow"></span></div>
+        <h2 id="h-gap">What drives the gap to <span id="gapPeer">peers</span></h2>
+        <p>Each bar is <span class="js-bench">Reading</span>'s spend on one activity minus what it would spend at the peer average per £1 of income. Residences and catering are shown net of the income they earn.</p>
+      </div></div>
+      <div class="legend" id="gapLegend"></div>
+      <div class="chart" id="gapChart"></div>
+    </section>
+    <section class="card" aria-labelledby="h-dettr">
+      <div class="sec-head">
+        <div>
+          <div class="eyebrow">Trend · same filters applied in every year</div>
+          <h2 id="h-dettr">Any cost line over time</h2>
+        </div>
+        <label class="field"><span>Cost line</span><select id="fDetLine"></select></label>
+      </div>
+      <div class="legend" id="detTrendLegend"></div>
+      <div class="chart" id="detTrend"></div>
+    </section>
+    <div id="detailCards" class="detail-cards"></div>
+  </div>
+
+  <div class="pane" id="pane-subjects" role="tabpanel" aria-labelledby="tab-subjects" hidden>
+    <section class="card" aria-labelledby="h-subjx">
+      <div class="sec-head"><div>
+        <div class="eyebrow">Subjects · academic departments only · <span id="subjEyebrow"></span></div>
+        <h2 id="h-subjx">How efficient is each subject area?</h2>
+        <p>Departmental spend set against the size of each subject (student FTE) and the research income it brings in. Each row shows every peer as a dot, the sector median as a tick, and <span class="js-bench bench">Reading</span> as the large dot.</p>
+      </div></div>
+      <div class="toolbar">
+        <label class="field"><span>Measure</span><select id="fSubjMetric"></select></label>
+        <label class="field"><span>Subject area (highlight and trend)</span><select id="fSubjArea"></select></label>
+      </div>
+      <div class="chart" id="subjMatrix"></div>
+    </section>
+    <section class="card" aria-labelledby="h-subjt">
+      <div class="sec-head"><div>
+        <div class="eyebrow">Subject scorecard · medians</div>
+        <h2 id="h-subjt"><span class="js-bench bench">Reading</span> against peers, subject by subject</h2>
+        <p>Click a row to see its trend.</p>
+      </div></div>
+      <div class="tbl-wrap" style="max-height:none"><table id="subjTable" class="det"></table></div>
+    </section>
+    <section class="card" aria-labelledby="h-subjtr">
+      <div class="sec-head"><div>
+        <div class="eyebrow">Trend · same filters applied in every year</div>
+        <h2 id="h-subjtr"><span id="subjTrendTitle"></span></h2>
+      </div></div>
+      <div class="legend" id="subjTrendLegend"></div>
+      <div class="chart" id="subjTrend"></div>
+      <p class="note" id="subjNote"></p>
+    </section>
+  </div>
+
+  <section class="card" aria-labelledby="h-notes">
+    <div class="sec-head"><div><div class="eyebrow">Method</div><h2 id="h-notes">Definitions and caveats</h2></div></div>
+    <dl class="defs">
+      <dt>Income</dt><dd>Total income from HESA Table 1: tuition fees, funding body grants, research grants, other income, investment income, donations and endowments.</dd>
+      <dt>Academic delivery</dt><dd>Academic departments (teaching and departmental research, HESA cost centres 101–145) plus research grants and contracts (207).</dd>
+      <dt>Support services</dt><dd>Academic services (201: library, central IT and computing, learning resources) plus general education expenditure (203: bursaries, scholarships, examinations) and staff and student facilities (204).</dd>
+      <dt>Management and administration</dt><dd>Central administration and services (202).</dd>
+      <dt>Estates</dt><dd>Premises (205): running costs, repairs and maintenance, depreciation and finance costs on the estate.</dd>
+      <dt>Residences and other</dt><dd>Residences and catering operations (206) and other expenditure (208, excluding the pension cost adjustment).</dd>
+      <dt>Pension adjustments</dt><dd>The non-cash pension cost adjustment reported in Table 8 (USS, LGPS and similar provision movements). These swing year to year: Reading's was +£72.6m in 2021/22 and −£102.7m in 2023/24. They are excluded by default; switch to Included to match the audited accounts.</dd>
+      <dt>Surplus or deficit</dt><dd>Income minus expenditure (operating result before gains, losses, tax and joint ventures). The surplus and deficit filter uses this figure, so it follows the pension setting.</dd>
+      <dt>Capital investment</dt><dd>HESA Table 9 total actual capital spend, split into buildings and equipment plus intangible assets. Capital spend is lumpy, so the 3-year average divides three years of spend by three years of income.</dd>
+      <dt>Averages</dt><dd>Provider average gives each provider equal weight. Pooled £ adds up money across the group, so large providers dominate. The benchmark is always excluded from group and sector averages; medians appear on the distribution chart.</dd>
+      <dt>Mission groups</dt><dd>Memberships as at 2026, applied to every year. "Reading comparators" is a starting peer set of research-intensive universities outside the Russell Group; edit <span class="num">data/mission_groups.csv</span> to change it.</dd>
+      <dt>Coverage</dt><dd>From 2018/19 some English providers didn't have to report the subject (cost centre) breakdown, and providers that joined later or haven't yet reported a year are missing from it. Small and specialist providers are excluded by default through the minimum income filter.</dd>
+      <dt>Institution detail tab</dt><dd>Breaks each Overview heading into HESA Table 8 activity lines and types of cost (staff, operating, depreciation, interest). Research cost recovery compares research grant income (Table 1) with research grant spend. Residences and catering are shown net of their income (Table 7). Gaps in £m apply the per-£1 difference to the benchmark's own income. Providers that don't report a breakdown are left out of that line's average.</dd>
+      <dt>Subjects tab</dt><dd>Academic department spend and research income by HESA cost centre (Tables 8 and 5), set against student enrolments by subject (Student Table 49, full-time plus half of part-time, all levels). Cost centres and CAH subjects are matched into nine broad areas: medicine, health and psychology (101–107 / CAH 01, 02, 04); biosciences, agriculture, vet and sport (108–110, 112 / 03, 05, 06); physical and environmental sciences and maths (111, 113, 114, 122, 124 / 07, 09, 26); engineering and computing (115–121 / 10, 11); architecture and built environment (123 / 13); social sciences and law (127–132 / 15, 16); business and management (133–134 / 17); education (135–136 / 22, 23); arts, humanities and languages (125–126, 137–145 / 19, 20, 24, 25). Providers code staff and spend to cost centres in different ways, so treat single-subject outliers with care. Subject comparisons use medians.</dd>
+      <dt>Source</dt><dd>HESA Higher Education Provider Data: Finance, Tables 1, 5, 6, 7, 8, 9 and 14 (2015/16 to 2024/25, last updated May 2026), and HESA Student Table 49 (January 2026). Licensed under CC BY 4.0. All money is in £ thousands at source.</dd>
+    </dl>
+  </section>
+</div>
+<div class="tip" id="tip" hidden></div>
+
+<script type="application/json" id="data">__DATA__</script>
+<script>
+(() => {
+"use strict";
+const D = JSON.parse(document.getElementById("data").textContent);
+const FC = D.fin_cols, SC = D.subj_cols, YEARS = D.years, P = D.providers;
+const READING = "10007802";
+
+// ---------- indexes
+const FIN = {};
+for (const r of D.fin) { const o = { id: r[0] }; FC.forEach((c, i) => (o[c] = r[2 + i])); (FIN[r[1]] ||= new Map()).set(r[0], o); }
+const SUBJ = {};
+for (const r of D.subj) { const o = {}; SC.forEach((c, i) => (o[c] = r[3 + i] ?? 0)); ((SUBJ[r[1]] ||= {})[r[0]] ||= {})[r[2]] = o; }
+const AREAS = D.areas;
+const CUSTOM = "Custom peer set";
+const shortName = (id) => (P[id] ? P[id][0] : id)
+  .replace(/^The /, "").replace(/^University of /, "").replace(/ University$/, "")
+  .replace("Imperial College of Science, Technology and Medicine", "Imperial College London")
+  .replace("London School of Economics and Political Science", "LSE")
+  .replace("Royal Holloway and Bedford New College", "Royal Holloway")
+  .replace(/^University College London$/, "UCL");
+const fullName = (id) => (P[id] ? P[id][0] : id);
+
+// ---------- categories
+const DETAIL = [
+  { k: "acad", label: "Academic departments", c: "--c1" },
+  { k: "research", label: "Research grants & contracts", c: "--c2" },
+  { k: "acserv", label: "Academic services (library, IT)", c: "--c3" },
+  { k: "student", label: "Student support & facilities", c: "--c4" },
+  { k: "mgmt", label: "Central administration", c: "--c5" },
+  { k: "estates", label: "Premises", c: "--c6" },
+  { k: "resid", label: "Residences & catering", c: "--c7" },
+  { k: "other", label: "Other expenditure", c: "--c8" },
+];
+const FAMS = [
+  { k: "acaddel", label: "Academic delivery", c: "--c1", parts: ["acad", "research"] },
+  { k: "support", label: "Support services", c: "--c2", parts: ["acserv", "student"] },
+  { k: "mgmt", label: "Management & admin", c: "--c3", parts: ["mgmt"] },
+  { k: "estates", label: "Estates", c: "--c4", parts: ["estates"] },
+  { k: "otherops", label: "Residences & other", c: "--c5", parts: ["resid", "other"] },
+];
+const PENSION = { k: "pension", label: "Pension adjustment", c: "--sector", hatch: true };
+const METRICS = {
+  acaddel: "Academic delivery", acad: "Academic departments", research: "Research grants & contracts",
+  support: "Support services", acserv: "Academic services", student: "Student support & facilities",
+  mgmt: "Management & admin", estates: "Estates (premises)", otherops: "Residences & other",
+  surplus: "Surplus / deficit", capex: "Capital investment", capex_build: "Buildings investment", capex_equip: "Equipment & digital investment",
+  fees: "Tuition fee income",
+};
+const PILL_METRICS = ["acaddel", "support", "mgmt", "estates", "otherops", "surplus", "capex", "acad", "research", "acserv", "student"];
+
+// ---------- state
+const S = {
+  year: YEARS.length - 1, bench: READING, pension: false, surplus: "all", nation: "all", minInc: 20000,
+  method: "mean", groups: new Set(["Reading comparators (editable)"]), detail: false, metric: "acaddel",
+  inv3: true, subjMetric: "spend", subjArea: null, detLine: null, custom: new Set(), sort: { k: "acaddel", dir: -1 }, search: "",
+};
+try {
+  const saved = JSON.parse(localStorage.getItem("ukhe-pfp") || "null");
+  if (saved) {
+    if (Array.isArray(saved.groups)) S.groups = new Set(saved.groups.filter((g) => g in D.groups || g === CUSTOM));
+    if (Array.isArray(saved.custom)) S.custom = new Set(saved.custom.filter((id) => P[id]));
+  }
+} catch (e) { /* storage unavailable */ }
+const persist = () => { try { localStorage.setItem("ukhe-pfp", JSON.stringify({ groups: [...S.groups], custom: [...S.custom] })); } catch (e) {} };
+
+const groupMembers = (g) => (g === CUSTOM ? [...S.custom] : D.groups[g] || []);
+const allGroupNames = () => [...Object.keys(D.groups), ...(S.custom.size ? [CUSTOM] : [])];
+const selGroups = () => allGroupNames().filter((g) => S.groups.has(g));
+
+// ---------- derivation
+function derive(o, yi) {
+  const v = {
+    acad: o.acad || 0, research: o.research || 0, acserv: o.acserv || 0,
+    student: (o.gen_ed || 0) + (o.facilities || 0), mgmt: o.admin || 0, estates: o.premises || 0,
+    resid: o.resid || 0, other: o.other_ex_pen || 0, pension: S.pension ? o.pension_adj || 0 : 0,
+  };
+  v.exp = DETAIL.reduce((a, c) => a + v[c.k], 0) + v.pension;
+  v.inc = o.inc;
+  v.surplus = v.inc - v.exp;
+  v.acaddel = v.acad + v.research; v.support = v.acserv + v.student; v.otherops = v.resid + v.other;
+  v.fees = o.inc_fees;
+  // capital: optionally 3-year pooled
+  let cb = 0, ce = 0, ct = 0, ci = 0, n = 0;
+  const span = S.inv3 ? [yi - 2, yi - 1, yi] : [yi];
+  for (const y of span) {
+    const q = FIN[y] && FIN[y].get(o.id);
+    if (!q || q.capex == null) continue;
+    ct += q.capex; cb += q.capex_build || 0; ce += q.capex_equip || 0; ci += q.inc; n++;
+  }
+  const capInc = n ? ci : null;
+  const r = {};
+  for (const k of ["acad", "research", "acserv", "student", "mgmt", "estates", "resid", "other", "pension", "surplus", "acaddel", "support", "otherops", "fees"]) r[k] = v[k] == null ? NaN : v[k] / v.inc;
+  r.capex = capInc ? ct / capInc : NaN; r.capex_build = capInc ? cb / capInc : NaN; r.capex_equip = capInc ? ce / capInc : NaN;
+  v.capex = ct; v.capex_build = cb; v.capex_equip = ce; v.capInc = capInc;
+  return { v, r };
+}
+
+function universe(yi) {
+  const m = FIN[yi];
+  const res = { bench: null, sector: [], groups: {}, combined: [] };
+  if (!m) return res;
+  for (const [id, o] of m) {
+    const d = derive(o, yi);
+    const rec = { id, name: shortName(id), country: P[id] ? P[id][1] : "", ...d };
+    if (id === S.bench) { res.bench = rec; continue; }
+    if (S.nation !== "all" && rec.country !== S.nation) continue;
+    if (!(d.v.inc >= S.minInc)) continue;
+    if (S.surplus === "surplus" && d.v.surplus < 0) continue;
+    if (S.surplus === "deficit" && d.v.surplus >= 0) continue;
+    res.sector.push(rec);
+  }
+  const comb = new Set();
+  for (const g of selGroups()) {
+    const mem = new Set(groupMembers(g));
+    res.groups[g] = res.sector.filter((x) => mem.has(x.id));
+    res.groups[g].forEach((x) => comb.add(x.id));
+  }
+  res.combined = res.sector.filter((x) => comb.has(x.id));
+  return res;
+}
+
+const finite = (x) => Number.isFinite(x);
+function agg(list, k) {
+  const L = list.filter((x) => finite(x.r[k]));
+  if (!L.length) return NaN;
+  if (S.method === "pooled") {
+    if (k.startsWith("capex")) { let a = 0, b = 0; for (const x of L) { a += x.v[k]; b += x.v.capInc; } return a / b; }
+    let a = 0, b = 0; for (const x of L) { a += x.v[k]; b += x.v.inc; } return a / b;
+  }
+  return L.reduce((s, x) => s + x.r[k], 0) / L.length;
+}
+function median(arr) { const a = arr.filter(finite).sort((x, y) => x - y); if (!a.length) return NaN; const m = a.length >> 1; return a.length % 2 ? a[m] : (a[m - 1] + a[m]) / 2; }
+
+// comparison rows: benchmark, combined (if >1 groups), each group, sector
+function compRows(U) {
+  const rows = [];
+  if (U.bench) rows.push({ kind: "bench", label: shortName(S.bench), list: [U.bench] });
+  const gs = selGroups();
+  if (gs.length > 1) rows.push({ kind: "group", label: "Selected groups combined", list: U.combined });
+  for (const g of gs) rows.push({ kind: "group", label: g.replace(" (editable)", ""), list: U.groups[g] });
+  rows.push({ kind: "sector", label: S.nation === "all" ? "UK sector" : `${S.nation} sector`, list: U.sector });
+  return rows;
+}
+const primaryGroup = (U) => { const gs = selGroups(); if (!gs.length) return null; return gs.length > 1 ? { label: "Selected groups", list: U.combined } : { label: gs[0].replace(" (editable)", ""), list: U.groups[gs[0]] }; };
+
+// ---------- formatting
+const pence = (x, dp = 1) => (finite(x) ? (x * 100).toFixed(dp) + "p" : "–");
+const signedP = (x, dp = 1) => (finite(x) ? (x >= 0 ? "+" : "−") + Math.abs(x * 100).toFixed(dp) + "p" : "–");
+const money = (k) => (finite(k) ? (Math.abs(k) >= 1e6 ? "£" + (k / 1e6).toFixed(2) + "bn" : "£" + (k / 1000).toFixed(1) + "m") : "–");
+const pct = (x, dp = 0) => (finite(x) ? (x * 100).toFixed(dp) + "%" : "–");
+const ord = (n) => { const s = ["th", "st", "nd", "rd"], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); };
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const cssv = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+
+// ---------- tooltip
+const tip = document.getElementById("tip");
+function showTip(html, ev) {
+  tip.innerHTML = html; tip.hidden = false;
+  const pad = 14, w = tip.offsetWidth, h = tip.offsetHeight;
+  let x = ev.clientX + pad, y = ev.clientY + pad;
+  if (x + w > innerWidth - 8) x = ev.clientX - w - pad;
+  if (y + h > innerHeight - 8) y = ev.clientY - h - pad;
+  tip.style.left = Math.max(8, x) + "px"; tip.style.top = Math.max(8, y) + "px";
+}
+const hideTip = () => (tip.hidden = true);
+function bindTips(root) {
+  root.querySelectorAll("[data-tip]").forEach((el) => {
+    el.addEventListener("mousemove", (e) => showTip(el.getAttribute("data-tip"), e));
+    el.addEventListener("mouseleave", hideTip);
+    el.addEventListener("click", (e) => showTip(el.getAttribute("data-tip"), e));
+  });
+}
+document.addEventListener("scroll", hideTip, { passive: true });
+
+const svgNS = (w, h, inner) => `<svg viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" role="img" xmlns="http://www.w3.org/2000/svg">${inner}</svg>`;
+const hatchDef = (id) => `<defs><pattern id="${id}" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="6" style="fill:var(--chip)"/><line x1="0" y1="0" x2="0" y2="6" style="stroke:var(--sector);stroke-width:2.5"/></pattern></defs>`;
+
+// ---------- controls
+function segInit(id, cb) {
+  const el = document.getElementById(id);
+  el.addEventListener("click", (e) => {
+    const b = e.target.closest("button"); if (!b) return;
+    el.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", x === b ? "true" : "false"));
+    cb(b.dataset.v); render();
+  });
+}
+function setSeg(id, v) { document.querySelectorAll(`#${id} button`).forEach((x) => x.setAttribute("aria-pressed", x.dataset.v === v ? "true" : "false")); }
+
+const fYear = document.getElementById("fYear");
+YEARS.forEach((y, i) => fYear.add(new Option(y, i)));
+fYear.value = S.year;
+fYear.onchange = () => { S.year = +fYear.value; render(); };
+const fBench = document.getElementById("fBench");
+Object.keys(P).sort((a, b) => shortName(a).localeCompare(shortName(b))).forEach((id) => fBench.add(new Option(fullName(id), id)));
+fBench.value = S.bench;
+fBench.onchange = () => { S.bench = fBench.value; render(); };
+segInit("fPension", (v) => (S.pension = v === "in"));
+segInit("fSurplus", (v) => (S.surplus = v));
+segInit("fMethod", (v) => (S.method = v));
+segInit("fDetail", (v) => (S.detail = v === "1"));
+segInit("fInv3", (v) => (S.inv3 = v === "3"));
+document.getElementById("fNation").onchange = (e) => { S.nation = e.target.value; render(); };
+document.getElementById("fMin").onchange = (e) => { S.minInc = +e.target.value; render(); };
+document.getElementById("leagueSearch").oninput = (e) => { S.search = e.target.value.toLowerCase(); renderLeague(lastU); };
+
+function renderGroupChips(U) {
+  const el = document.getElementById("fGroups");
+  el.innerHTML = allGroupNames().map((g) => {
+    const n = groupMembers(g).filter((id) => U.sector.some((x) => x.id === id)).length;
+    return `<button type="button" class="chip" data-g="${esc(g)}" aria-pressed="${S.groups.has(g)}">${esc(g.replace(" (editable)", ""))}<span class="n">${n}</span></button>`;
+  }).join("");
+}
+document.getElementById("fGroups").addEventListener("click", (e) => {
+  const b = e.target.closest("button[data-g]"); if (!b) return;
+  const g = b.dataset.g; S.groups.has(g) ? S.groups.delete(g) : S.groups.add(g); persist(); render();
+});
+function renderPicker() {
+  const q = (document.getElementById("pickSearch").value || "").toLowerCase();
+  const ids = Object.keys(P).filter((id) => FIN[S.year] && FIN[S.year].has(id) && (FIN[S.year].get(id).inc || 0) >= 10000)
+    .sort((a, b) => shortName(a).localeCompare(shortName(b)))
+    .filter((id) => !q || fullName(id).toLowerCase().includes(q) || S.custom.has(id));
+  document.getElementById("pickList").innerHTML = ids.map((id) =>
+    `<label><input type="checkbox" data-id="${id}" ${S.custom.has(id) ? "checked" : ""}><span title="${esc(fullName(id))}">${esc(shortName(id))}</span></label>`).join("");
+}
+document.getElementById("pickSearch").oninput = renderPicker;
+document.getElementById("pickList").addEventListener("change", (e) => {
+  const id = e.target.dataset.id; if (!id) return;
+  if (e.target.checked) { S.custom.add(id); S.groups.add(CUSTOM); } else S.custom.delete(id);
+  if (!S.custom.size) S.groups.delete(CUSTOM);
+  persist(); render();
+});
+document.getElementById("customBox").addEventListener("toggle", renderPicker);
+
+// ---------- render: summary tiles
+function renderTiles(U) {
+  const b = U.bench, G = primaryGroup(U);
+  const el = document.getElementById("tiles");
+  if (!b) { el.innerHTML = `<p class="note">${esc(fullName(S.bench))} has no finance return for ${YEARS[S.year]}. Choose another year.</p>`; return; }
+  const items = [
+    ...FAMS.map((f) => ({ k: f.k, label: f.label, c: f.c })),
+    ...(S.pension ? [{ k: "pension", label: "Pension adjustment", c: "--sector" }] : []),
+    { k: "surplus", label: "Surplus / deficit", c: null },
+    { k: "capex", label: S.inv3 ? "Capital investment (3-yr)" : "Capital investment", c: null },
+  ];
+  el.innerHTML = items.map((it) => {
+    const val = b.r[it.k], ga = G ? agg(G.list, it.k) : NaN, sa = agg(U.sector, it.k);
+    const sw = it.c ? `<i class="sw" style="background:var(${it.c})"></i>` : "";
+    return `<div class="tile"><div class="lab">${sw}${esc(it.label)}</div>
+      <div class="big">${pence(val)}<small> per £1</small></div>
+      <div class="cmp">${G ? `<div>${esc(G.label)} <span class="num">${pence(ga)}</span> · <span class="delta">${signedP(val - ga)}</span></div>` : ""}
+      <div>Sector <span class="num">${pence(sa)}</span> · <span class="delta">${signedP(val - sa)}</span></div></div></div>`;
+  }).join("");
+  const sur = b.v.surplus;
+  document.getElementById("benchStatus").innerHTML =
+    `<span class="pill ${sur >= 0 ? "sur" : "def"}">${sur >= 0 ? "▲ Surplus" : "▼ Deficit"} ${money(Math.abs(sur))}</span>
+     <span class="tag">&nbsp;Income ${money(b.v.inc)} · ${YEARS[S.year]}</span>`;
+}
+
+// ---------- render: £1 split
+function splitCats() { const base = S.detail ? DETAIL : FAMS; return S.pension ? [...base, PENSION] : base; }
+function renderSplit(U) {
+  const rows = compRows(U).filter((r) => r.list.length);
+  const cats = splitCats();
+  document.getElementById("splitLegend").innerHTML = cats.map((c) =>
+    `<span><i class="sw" style="${c.hatch ? "background:repeating-linear-gradient(45deg,var(--sector) 0 2px,var(--chip) 2px 5px)" : `background:var(${c.c})`}"></i>${esc(c.label)}</span>`).join("") +
+    `<span><i class="sw" style="border:1.5px dashed var(--good)"></i>Surplus</span><span><i class="sw" style="background:var(--critical)"></i>Deficit (beyond £1)</span>`;
+  const host = document.getElementById("splitChart");
+  const W = Math.max(320, host.clientWidth || 900);
+  const narrow = W < 640;
+  const labW = narrow ? 0 : 200, rightW = 92, rowH = narrow ? 52 : 38, barH = 22, top = 22;
+  const vals = rows.map((r) => {
+    const segs = cats.map((c) => ({ c, v: r.kind === "bench" ? r.list[0].r[c.k] : agg(r.list, c.k) }));
+    const tot = segs.reduce((a, s) => a + (finite(s.v) ? Math.max(0, s.v) : 0), 0);
+    const negPen = segs.reduce((a, s) => a + (finite(s.v) && s.v < 0 ? s.v : 0), 0);
+    return { r, segs, tot: tot + negPen, gross: tot };
+  });
+  const maxX = Math.max(1.05, ...vals.map((x) => x.gross)) * 1.02;
+  const plotW = W - labW - rightW;
+  const X = (v) => labW + (v / maxX) * plotW;
+  const H = top + rows.length * rowH + 8;
+  let g = hatchDef("hatchS");
+  // axis ticks
+  for (let t = 0; t <= maxX + 1e-9; t += 0.2) {
+    g += `<line x1="${X(t)}" x2="${X(t)}" y1="${top - 6}" y2="${H - 8}" style="stroke:var(--grid)"/><text class="ax" x="${X(t)}" y="${top - 10}" text-anchor="middle">${t === 0 ? "0" : (t * 100).toFixed(0) + "p"}</text>`;
+  }
+  vals.forEach((row, i) => {
+    const y0 = top + i * rowH + (narrow ? 18 : (rowH - barH) / 2);
+    const isB = row.r.kind === "bench";
+    const lab = `${esc(row.r.label)}${row.r.kind !== "bench" ? ` <tspan class="lbl2">(${row.r.list.length})</tspan>` : ""}`;
+    if (narrow) g += `<text class="lbl" x="0" y="${y0 - 5}" style="${isB ? "fill:var(--accent);font-weight:600" : ""}">${lab}</text>`;
+    else g += `<text class="lbl" x="${labW - 12}" y="${y0 + barH / 2 + 4}" text-anchor="end" style="${isB ? "fill:var(--accent);font-weight:600" : ""}">${lab}</text>`;
+    let x = 0;
+    row.segs.forEach((s) => {
+      if (!finite(s.v) || s.v <= 0) return;
+      const x1 = X(x), x2 = X(x + s.v), w = Math.max(0, x2 - x1 - 2);
+      const fill = s.c.hatch ? "url(#hatchS)" : `var(${s.c.c})`;
+      const amt = isB ? ` · ${money(row.r.list[0].v[s.c.k])}` : "";
+      g += `<rect x="${x1}" y="${y0}" width="${w}" height="${barH}" rx="2" style="fill:${fill}" data-tip="<b>${esc(row.r.label)}</b><br>${esc(s.c.label)}: <span class='num'>${pence(s.v)}</span>${amt}"/>`;
+      if (w > 34 && !s.c.hatch) g += `<text class="seglbl" x="${x1 + w / 2}" y="${y0 + barH / 2 + 4}" text-anchor="middle">${(s.v * 100).toFixed(0)}</text>`;
+      x += s.v;
+    });
+    const sur = 1 - row.tot;
+    if (sur >= 0) {
+      if (X(1) - X(x) > 2) g += `<rect x="${X(x)}" y="${y0 + 1}" width="${Math.max(0, X(1) - X(x) - 1)}" height="${barH - 2}" rx="2" style="fill:none;stroke:var(--good);stroke-width:1.5;stroke-dasharray:3 2" data-tip="<b>${esc(row.r.label)}</b><br>Surplus: <span class='num'>${pence(sur)}</span>"/>`;
+      g += `<text class="lbl2" x="${Math.max(X(1), X(x)) + 8}" y="${y0 + barH / 2 + 4}" style="fill:var(--good)">▲ ${pence(sur)}</text>`;
+    } else {
+      g += `<rect x="${X(1)}" y="${y0 + barH + 2}" width="${Math.max(1, X(x) - X(1))}" height="3" style="fill:var(--critical)"/>`;
+      g += `<text class="lbl2" x="${X(x) + 8}" y="${y0 + barH / 2 + 4}" style="fill:var(--critical)">▼ ${pence(-sur)}</text>`;
+    }
+  });
+  g += `<line x1="${X(1)}" x2="${X(1)}" y1="${top - 4}" y2="${H - 4}" style="stroke:var(--ink);stroke-width:1.5"/>`;
+  host.innerHTML = svgNS(W, H, g);
+  bindTips(host);
+
+  // companion table
+  const allCats = [...(S.detail ? DETAIL : FAMS), ...(S.pension ? [PENSION] : [])];
+  const t = document.getElementById("splitTable");
+  t.innerHTML = `<thead><tr><th>Pence per £1</th>${allCats.map((c) => `<th>${esc(c.label)}</th>`).join("")}<th>Surplus</th><th>Providers</th></tr></thead><tbody>` +
+    vals.map((row) => `<tr class="${row.r.kind === "bench" ? "is-bench" : row.r.kind === "sector" ? "avg" : ""}"><td>${esc(row.r.label)}</td>${row.segs.map((s) => `<td class="num">${pence(s.v)}</td>`).join("")}<td class="num" style="color:${1 - row.tot >= 0 ? "var(--good)" : "var(--critical)"}">${signedP(1 - row.tot)}</td><td class="num">${row.r.list.length}</td></tr>`).join("") + "</tbody>";
+}
+
+// ---------- strip / distribution chart (reusable)
+function hash(s) { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return ((h >>> 0) % 1000) / 1000; }
+function stripChart(host, rows, benchVal, benchLabel, fmt, unitTitle) {
+  // rows: [{label, pts:[{id,name,val}], color}]
+  const W = Math.max(320, host.clientWidth || 900), narrow = W < 640;
+  const labW = narrow ? 0 : 190, rowH = narrow ? 64 : 50, top = 30, padR = 24;
+  const all = rows.flatMap((r) => r.pts.map((p) => p.val)).filter(finite).sort((a, b) => a - b);
+  if (!all.length) { host.innerHTML = `<p class="note">No providers match these filters.</p>`; return; }
+  const q = (p) => all[Math.min(all.length - 1, Math.max(0, Math.round(p * (all.length - 1))))];
+  let lo = Math.min(q(0.02), finite(benchVal) ? benchVal : Infinity), hi = Math.max(q(0.98), finite(benchVal) ? benchVal : -Infinity);
+  if (lo === hi) { lo -= 0.05; hi += 0.05; }
+  const span = hi - lo; lo -= span * 0.04; hi += span * 0.04;
+  const plotW = W - labW - padR;
+  const X = (v) => labW + ((Math.min(hi, Math.max(lo, v)) - lo) / (hi - lo)) * plotW;
+  const H = top + rows.length * rowH + 26;
+  const step = niceStep((hi - lo) / (narrow ? 4 : 7));
+  let g = "";
+  for (let t = Math.ceil(lo / step) * step; t <= hi + 1e-9; t += step) {
+    g += `<line x1="${X(t)}" x2="${X(t)}" y1="${top - 4}" y2="${H - 22}" style="stroke:var(--grid)"/><text class="ax" x="${X(t)}" y="${H - 6}" text-anchor="middle">${fmt(t, 0)}</text>`;
+  }
+  if (lo < 0 && hi > 0) g += `<line x1="${X(0)}" x2="${X(0)}" y1="${top - 4}" y2="${H - 22}" style="stroke:var(--ink-3)"/>`;
+  rows.forEach((r, i) => {
+    const yc = top + i * rowH + (narrow ? 38 : rowH / 2);
+    if (narrow) g += `<text class="lbl" x="0" y="${yc - 20}">${esc(r.label)} <tspan class="lbl2">(${r.pts.length})</tspan></text>`;
+    else g += `<text class="lbl" x="${labW - 12}" y="${yc + 4}" text-anchor="end">${esc(r.label)} <tspan class="lbl2">(${r.pts.length})</tspan></text>`;
+    g += `<line x1="${labW}" x2="${W - padR}" y1="${yc}" y2="${yc}" style="stroke:var(--grid)"/>`;
+    r.pts.forEach((p) => {
+      if (!finite(p.val)) return;
+      const jy = yc + (hash(p.id) - 0.5) * (rowH * 0.45);
+      const clipped = p.val < lo || p.val > hi;
+      g += `<circle cx="${X(p.val)}" cy="${jy}" r="4.5" style="fill:var(${r.color});fill-opacity:${r.color === "--sector" ? 0.45 : 0.75};stroke:var(--surface);stroke-width:1" data-tip="<b>${esc(p.name)}</b><br><span class='num'>${fmt(p.val)}</span>${clipped ? " (off scale)" : ""}"/>`;
+    });
+    const med = median(r.pts.map((p) => p.val));
+    if (finite(med)) g += `<line x1="${X(med)}" x2="${X(med)}" y1="${yc - rowH * 0.32}" y2="${yc + rowH * 0.32}" style="stroke:var(--ink);stroke-width:2.5" data-tip="<b>${esc(r.label)}</b> median<br><span class='num'>${fmt(med)}</span>"/>`;
+  });
+  if (finite(benchVal)) {
+    const bx = X(benchVal);
+    g += `<line x1="${bx}" x2="${bx}" y1="${top - 2}" y2="${H - 22}" style="stroke:var(--accent);stroke-width:2"/>`;
+    rows.forEach((r, i) => { const yc = top + i * rowH + (narrow ? 38 : rowH / 2); g += `<circle cx="${bx}" cy="${yc}" r="6" style="fill:var(--accent);stroke:var(--surface);stroke-width:2" data-tip="<b>${esc(benchLabel)}</b><br><span class='num'>${fmt(benchVal)}</span>"/>`; });
+    const anchor = bx > W - 160 ? "end" : bx < labW + 120 ? "start" : "middle";
+    g += `<text x="${bx + (anchor === "end" ? -4 : anchor === "start" ? 4 : 0)}" y="${top - 12}" text-anchor="${anchor}" style="fill:var(--accent);font-weight:600;font-size:12.5px;font-family:var(--font-body)">${esc(benchLabel)} ${fmt(benchVal)}</text>`;
+  }
+  host.innerHTML = svgNS(W, H, g) + `<p class="note">${unitTitle} Ticks mark each set's median. Dots beyond the axis are drawn at the edge.</p>`;
+  bindTips(host);
+}
+function niceStep(raw) { const p = Math.pow(10, Math.floor(Math.log10(raw))); const m = raw / p; return (m < 1.5 ? 1 : m < 3.5 ? 2 : m < 7.5 ? 5 : 10) * p; }
+
+function renderMetricPills() {
+  document.getElementById("metricPills").innerHTML = PILL_METRICS.map((k) =>
+    `<button type="button" class="chip" data-m="${k}" aria-pressed="${S.metric === k}">${esc(METRICS[k])}</button>`).join("");
+}
+document.getElementById("metricPills").addEventListener("click", (e) => {
+  const b = e.target.closest("button[data-m]"); if (!b) return; S.metric = b.dataset.m; render();
+});
+function renderStrip(U) {
+  const k = S.metric;
+  const rows = compRows(U).filter((r) => r.kind !== "bench" && r.list.length)
+    .map((r) => ({ label: r.label, color: r.kind === "sector" ? "--sector" : "--group", pts: r.list.map((x) => ({ id: x.id, name: x.name, val: x.r[k] })) }));
+  stripChart(document.getElementById("stripChart"), rows, U.bench ? U.bench.r[k] : NaN, shortName(S.bench), pence,
+    `${esc(METRICS[k])}, pence per £1 of ${k.startsWith("capex") && S.inv3 ? "income (3-year average)" : "income"}.`);
+}
+
+// ---------- trend
+function renderTrend() {
+  const k = S.metric;
+  document.getElementById("trendTitle").textContent = METRICS[k];
+  const series = [{ key: "bench", label: shortName(S.bench), color: "--accent", w: 2.5, pts: [] }];
+  const gs = selGroups();
+  if (gs.length) series.push({ key: "group", label: gs.length > 1 ? "Selected groups" : gs[0].replace(" (editable)", ""), color: "--group", w: 2, pts: [] });
+  series.push({ key: "sector", label: S.nation === "all" ? "UK sector" : `${S.nation} sector`, color: "--sector", w: 2, dash: "5 4", pts: [] });
+  YEARS.forEach((y, yi) => {
+    const U = universe(yi);
+    series[0].pts.push(U.bench ? U.bench.r[k] : NaN);
+    if (gs.length) { const G = primaryGroup(U); series[1].pts.push(G && G.list.length ? agg(G.list, k) : NaN); }
+    series[series.length - 1].pts.push(agg(U.sector, k));
+  });
+  document.getElementById("trendLegend").innerHTML = series.map((s) =>
+    `<span><svg width="22" height="10" aria-hidden="true"><line x1="0" x2="22" y1="5" y2="5" style="stroke:var(${s.color});stroke-width:${s.w};${s.dash ? `stroke-dasharray:${s.dash}` : ""}"/></svg>${esc(s.label)}</span>`).join("");
+  const host = document.getElementById("trendChart");
+  const W = Math.max(320, host.clientWidth || 900), H = 280, L = 48, R = W < 640 ? 16 : 130, T = 14, B = 30;
+  const vals = series.flatMap((s) => s.pts).filter(finite);
+  if (!vals.length) { host.innerHTML = `<p class="note">No data.</p>`; return; }
+  let lo = Math.min(...vals), hi = Math.max(...vals);
+  if (k !== "surplus") lo = Math.min(lo, 0);
+  const pad = (hi - lo) * 0.08 || 0.01; hi += pad; if (lo < 0 || k === "surplus") lo -= pad;
+  const step = niceStep((hi - lo) / 5);
+  lo = Math.floor(lo / step) * step; hi = Math.ceil(hi / step) * step;
+  const X = (i) => L + (i / (YEARS.length - 1)) * (W - L - R), Y = (v) => T + (1 - (v - lo) / (hi - lo)) * (H - T - B);
+  let g = "";
+  for (let t = lo; t <= hi + 1e-9; t += step) g += `<line x1="${L}" x2="${W - R}" y1="${Y(t)}" y2="${Y(t)}" style="stroke:${Math.abs(t) < 1e-9 ? "var(--ink-3)" : "var(--grid)"}"/><text class="ax" x="${L - 6}" y="${Y(t) + 4}" text-anchor="end">${(t * 100).toFixed(0)}p</text>`;
+  YEARS.forEach((y, i) => { if (W > 640 || i % 2 === 1) g += `<text class="ax" x="${X(i)}" y="${H - 8}" text-anchor="middle">${y}</text>`; });
+  g += `<line x1="${X(S.year)}" x2="${X(S.year)}" y1="${T}" y2="${H - B}" style="stroke:var(--ink-3);stroke-dasharray:2 3"/>`;
+  [...series].reverse().forEach((s) => {
+    let d = "", pen = false;
+    s.pts.forEach((v, i) => { if (!finite(v)) { pen = false; return; } d += (pen ? "L" : "M") + X(i).toFixed(1) + " " + Y(v).toFixed(1); pen = true; });
+    g += `<path d="${d}" style="fill:none;stroke:var(${s.color});stroke-width:${s.w};stroke-linejoin:round;${s.dash ? `stroke-dasharray:${s.dash}` : ""}"/>`;
+    s.pts.forEach((v, i) => { if (finite(v)) g += `<circle cx="${X(i)}" cy="${Y(v)}" r="${i === S.year ? 4.5 : 3}" style="fill:var(${s.color});stroke:var(--surface);stroke-width:1.5"/>`; });
+  });
+  // end labels, nudged apart so they never overlap
+  if (W >= 640) {
+    const ends = series.map((s) => { const li = s.pts.map((v, i) => (finite(v) ? i : -1)).filter((i) => i >= 0).pop(); return li == null ? null : { s, li, y: Y(s.pts[li]) + 4 }; }).filter(Boolean).sort((a, b) => a.y - b.y);
+    for (let i = 1; i < ends.length; i++) if (ends[i].y - ends[i - 1].y < 14) ends[i].y = ends[i - 1].y + 14;
+    ends.forEach((e) => (g += `<text class="lbl2" x="${X(e.li) + 8}" y="${e.y}" style="fill:var(${e.s.color === "--accent" ? "--accent" : "--ink-2"})">${esc(e.s.label.length > 16 ? e.s.label.slice(0, 15) + "…" : e.s.label)}</text>`));
+  }
+  // hover columns
+  YEARS.forEach((y, i) => {
+    const x0 = i === 0 ? L : (X(i - 1) + X(i)) / 2, x1 = i === YEARS.length - 1 ? W - R : (X(i) + X(i + 1)) / 2;
+    const html = `<b>${y}</b><br>` + series.map((s) => `${esc(s.label)}: <span class='num'>${pence(s.pts[i])}</span>`).join("<br>");
+    g += `<rect x="${x0}" y="${T}" width="${x1 - x0}" height="${H - T - B}" style="fill:transparent" data-tip="${html}"/>`;
+  });
+  host.innerHTML = svgNS(W, H, g);
+  bindTips(host);
+}
+
+// ---------- investment
+function renderInvest(U) {
+  const cats = [{ k: "capex_build", label: "Buildings (estates)", c: "--c6" }, { k: "capex_equip", label: "Equipment & digital (incl. software)", c: "--c7" }];
+  document.getElementById("invLegend").innerHTML = cats.map((c) => `<span><i class="sw" style="background:var(${c.c})"></i>${esc(c.label)}</span>`).join("");
+  const rows = compRows(U).filter((r) => r.list.length);
+  const host = document.getElementById("invChart");
+  const W = Math.max(320, host.clientWidth || 900), narrow = W < 640;
+  const labW = narrow ? 0 : 200, rightW = 70, rowH = narrow ? 50 : 36, barH = 20, top = 20;
+  const vals = rows.map((r) => ({ r, segs: cats.map((c) => ({ c, v: r.kind === "bench" ? r.list[0].r[c.k] : agg(r.list, c.k) })) }));
+  const maxX = Math.max(0.05, ...vals.map((x) => x.segs.reduce((a, s) => a + (finite(s.v) ? Math.max(0, s.v) : 0), 0))) * 1.05;
+  const X = (v) => labW + (v / maxX) * (W - labW - rightW);
+  const H = top + rows.length * rowH + 6;
+  const step = niceStep(maxX / (narrow ? 3 : 6));
+  let g = "";
+  for (let t = 0; t <= maxX + 1e-9; t += step) g += `<line x1="${X(t)}" x2="${X(t)}" y1="${top - 6}" y2="${H - 6}" style="stroke:var(--grid)"/><text class="ax" x="${X(t)}" y="${top - 9}" text-anchor="middle">${(t * 100).toFixed(0)}p</text>`;
+  vals.forEach((row, i) => {
+    const y0 = top + i * rowH + (narrow ? 18 : (rowH - barH) / 2), isB = row.r.kind === "bench";
+    const st = isB ? "fill:var(--accent);font-weight:600" : "";
+    const lab = `${esc(row.r.label)}${!isB ? ` <tspan class="lbl2">(${row.r.list.length})</tspan>` : ""}`;
+    g += narrow ? `<text class="lbl" x="0" y="${y0 - 5}" style="${st}">${lab}</text>` : `<text class="lbl" x="${labW - 12}" y="${y0 + barH / 2 + 4}" text-anchor="end" style="${st}">${lab}</text>`;
+    let x = 0;
+    row.segs.forEach((s) => {
+      if (!finite(s.v) || s.v <= 0) return;
+      const x1 = X(x), w = Math.max(0, X(x + s.v) - x1 - 2);
+      g += `<rect x="${x1}" y="${y0}" width="${w}" height="${barH}" rx="2" style="fill:var(${s.c.c})" data-tip="<b>${esc(row.r.label)}</b><br>${esc(s.c.label)}: <span class='num'>${pence(s.v)}</span>${isB ? " · " + money(row.r.list[0].v[s.c.k]) + (S.inv3 ? " over 3 yrs" : "") : ""}"/>`;
+      if (w > 34) g += `<text class="seglbl" x="${x1 + w / 2}" y="${y0 + barH / 2 + 4}" text-anchor="middle">${(s.v * 100).toFixed(1)}</text>`;
+      x += s.v;
+    });
+    g += `<text class="lbl2" x="${X(x) + 6}" y="${y0 + barH / 2 + 4}">${pence(x)}</text>`;
+  });
+  host.innerHTML = svgNS(W, H, g);
+  bindTips(host);
+}
+
+// ---------- league table
+let lastU = null;
+function renderLeague(U) {
+  const cols = [
+    { k: "inc", label: "Income", f: (x) => money(x.v.inc), v: (x) => x.v.inc },
+    ...FAMS.map((f) => ({ k: f.k, label: f.label, f: (x) => pence(x.r[f.k]), v: (x) => x.r[f.k] })),
+    ...(S.pension ? [{ k: "pension", label: "Pension adj.", f: (x) => pence(x.r.pension), v: (x) => x.r.pension }] : []),
+    { k: "surplus", label: "Surplus", f: (x) => `<span style="color:${x.r.surplus >= 0 ? "var(--good)" : "var(--critical)"}">${signedP(x.r.surplus)}</span>`, v: (x) => x.r.surplus },
+    { k: "capex", label: S.inv3 ? "Capex (3-yr)" : "Capex", f: (x) => pence(x.r.capex), v: (x) => x.r.capex },
+    { k: "fees", label: "Fees share", f: (x) => pence(x.r.fees, 0), v: (x) => x.r.fees },
+  ];
+  const G = primaryGroup(U);
+  const base = G ? G.list : U.sector;
+  const memberOf = (id) => selGroups().filter((g) => groupMembers(g).includes(id)).map((g) => g.replace(" (editable)", "")).join(", ");
+  const { k, dir } = S.sort; const col = cols.find((c) => c.k === k) || cols[1];
+  const list = base.filter((x) => !S.search || fullName(x.id).toLowerCase().includes(S.search))
+    .sort((a, b) => { const va = col.v(a), vb = col.v(b); if (!finite(va)) return 1; if (!finite(vb)) return -1; return (va - vb) * dir; });
+  // rank of bench within base for the sort column
+  let rankTxt = "";
+  if (U.bench && finite(col.v(U.bench))) {
+    const better = base.filter((x) => finite(col.v(x)) && (col.v(x) - col.v(U.bench)) * dir > 0).length;
+    rankTxt = ` · ${ord(better + 1)} of ${base.filter((x) => finite(col.v(x))).length + 1}`;
+  }
+  const avgRow = (label, L) => `<tr class="avg"><td>${esc(label)} average <span class="tag">(${L.length})</span></td>` + cols.map((c) =>
+    `<td class="num">${c.k === "inc" ? money(L.reduce((a, x) => a + x.v.inc, 0) / (L.length || 1)) : c.k === "surplus" ? signedP(agg(L, "surplus")) : c.k === "fees" ? pence(agg(L, "fees"), 0) : pence(agg(L, c.k))}</td>`).join("") + "</tr>";
+  const t = document.getElementById("leagueTable");
+  t.innerHTML = `<thead><tr>${[{ k: "name", label: "Provider" }, ...cols].map((c) => `<th data-k="${c.k}" ${c.k === k ? `aria-sort="${dir < 0 ? "descending" : "ascending"}"` : ""}>${esc(c.label)}${c.k === k ? (dir < 0 ? " ↓" : " ↑") : ""}</th>`).join("")}</tr></thead><tbody>` +
+    (U.bench ? `<tr class="is-bench"><td>${esc(shortName(S.bench))} <span class="tag">${esc(rankTxt)}</span></td>${cols.map((c) => `<td class="num">${c.f(U.bench)}</td>`).join("")}</tr>` : "") +
+    (G ? avgRow(G.label, G.list) : "") + avgRow(S.nation === "all" ? "UK sector" : S.nation + " sector", U.sector) +
+    list.map((x) => `<tr><td>${esc(x.name)}${G ? "" : ""} <span class="tag">${esc(memberOf(x.id))}</span></td>${cols.map((c) => `<td class="num">${c.f(x)}</td>`).join("")}</tr>`).join("") + "</tbody>";
+  t.querySelectorAll("th[data-k]").forEach((th) => th.onclick = () => {
+    const nk = th.dataset.k; if (nk === "name") return;
+    S.sort = { k: nk, dir: S.sort.k === nk ? -S.sort.dir : -1 }; renderLeague(lastU);
+  });
+}
+
+// ---------- shared helpers for detail + subject tabs
+const nz = (x) => (x == null ? 0 : x);
+const peerSet = (U) => {
+  const G = primaryGroup(U);
+  return G && G.list.length ? G : { label: S.nation === "all" ? "UK sector" : `${S.nation} sector`, list: U.sector };
+};
+const gapMoney = (m) => (finite(m) ? (m >= 0 ? "+" : "−") + "£" + Math.abs(m / 1000).toFixed(1) + "m" : "–");
+function quant(sorted, p) { if (!sorted.length) return NaN; const i = (sorted.length - 1) * p, lo = Math.floor(i), hi = Math.ceil(i); return sorted[lo] + (sorted[hi] - sorted[lo]) * (i - lo); }
+function rangeSvg(peerVals, bench, label, fmt) {
+  const a = peerVals.filter(finite).sort((x, y) => x - y);
+  const W = 150, H = 22;
+  if (!a.length) return "";
+  const p5 = quant(a, 0.05), p95 = quant(a, 0.95), q1 = quant(a, 0.25), q3 = quant(a, 0.75), med = quant(a, 0.5);
+  let lo = Math.min(0, p5, finite(bench) ? bench : 0), hi = Math.max(p95, finite(bench) ? bench : 0, 1e-6);
+  const pad = (hi - lo) * 0.06; if (lo < 0) lo -= pad; hi += pad;
+  const X = (v) => 4 + ((Math.min(hi, Math.max(lo, v)) - lo) / (hi - lo)) * (W - 8);
+  const t = `<b>${esc(label)}</b><br>Peer middle half: <span class='num'>${fmt(q1)} – ${fmt(q3)}</span><br>Peer median: <span class='num'>${fmt(med)}</span><br>${esc(shortName(S.bench))}: <span class='num'>${fmt(bench)}</span>`;
+  return `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" data-tip="${t}" role="img" aria-label="Peer spread">
+    <line x1="${X(p5)}" x2="${X(p95)}" y1="11" y2="11" style="stroke:var(--sector);stroke-width:1.5"/>
+    <rect x="${X(q1)}" y="6" width="${Math.max(2, X(q3) - X(q1))}" height="10" rx="2" style="fill:var(--group);fill-opacity:.28"/>
+    <line x1="${X(med)}" x2="${X(med)}" y1="4" y2="18" style="stroke:var(--ink);stroke-width:2"/>
+    ${finite(bench) ? `<circle cx="${X(bench)}" cy="11" r="5" style="fill:var(--accent);stroke:var(--surface);stroke-width:1.5"/>` : ""}</svg>`;
+}
+const spreadKey = () => `<p class="key"><span>Peer spread:</span>
+  <svg width="34" height="12" aria-hidden="true"><line x1="0" x2="34" y1="6" y2="6" style="stroke:var(--sector);stroke-width:1.5"/></svg>5th–95th percentile
+  <svg width="20" height="12" aria-hidden="true"><rect x="0" y="1" width="20" height="10" rx="2" style="fill:var(--group);fill-opacity:.28"/></svg>middle half
+  <svg width="6" height="14" aria-hidden="true"><line x1="3" x2="3" y1="0" y2="14" style="stroke:var(--ink);stroke-width:2"/></svg>median
+  <svg width="12" height="12" aria-hidden="true"><circle cx="6" cy="6" r="5" style="fill:var(--accent)"/></svg>${esc(shortName(S.bench))}</p>`;
+
+// ---------- institution detail tab
+const NATS = [["as", "Academic staff"], ["os", "Professional & support staff"], ["rs", "Restructuring"], ["op", "Operating costs"], ["dp", "Depreciation & amortisation"], ["in", "Interest & finance costs"]];
+const ALL_HEADS = ["acad", "research", "acserv", "gen_ed", "facilities", "admin", "premises", "resid", "other"];
+function nat(o, heads, n) {
+  let t = 0;
+  for (const h of heads) {
+    if (h === "other") t += nz(o["other_" + n]) - nz(o["pen_" + n]);
+    else t += nz(o[h + "_" + n]);
+  }
+  if (S.pension && heads === ALL_HEADS) t += nz(o["pen_" + n]);
+  return t;
+}
+const orNaN = (o, ks, f) => (ks.some((k) => o[k] != null && o[k] !== 0) ? f() : NaN);
+function detailSpec() {
+  const natRows = (heads, keep) => NATS.filter(([n]) => !keep || keep.includes(n)).map(([n, label]) => ({ label, f: (o) => nat(o, heads, n), lvl: 2 }));
+  const spec = [
+    { key: "whole", label: "Whole institution: cost structure", c: "--ink-3", rows: [
+      { label: "Total expenditure", f: (o) => ALL_HEADS.reduce((a, h) => a + nz(h === "other" ? o.other_ex_pen : o[h]), 0) + (S.pension ? nz(o.pension_adj) : 0), lvl: 0 },
+      ...NATS.map(([n, label]) => ({ label, f: (o) => nat(o, ALL_HEADS, n), lvl: 1 })),
+      { sub: "Efficiency ratios" },
+      { label: "Professional & support staff cost per £1 of academic staff cost", f: (o) => nat(o, ALL_HEADS, "os"), den: (o) => nat(o, ALL_HEADS, "as"), lvl: 1 },
+      { label: "All staff costs per £1 of income", f: (o) => nat(o, ALL_HEADS, "as") + nat(o, ALL_HEADS, "os"), lvl: 1 },
+    ] },
+    { key: "acaddel", label: "Academic delivery", c: "--c1", rows: [
+      { label: "Academic delivery total", f: (o) => nz(o.acad) + nz(o.research), lvl: 0 },
+      { label: "Academic departments (teaching & departmental research)", f: (o) => nz(o.acad), lvl: 1, gap: true },
+      ...natRows(["acad"], ["as", "os", "op", "dp"]),
+      { label: "Research grants & contracts (funded projects)", f: (o) => nz(o.research), lvl: 1 },
+      ...natRows(["research"], ["as", "os", "op", "dp"]),
+      { sub: "Research efficiency" },
+      { label: "Research grant income per £1 of direct research spend (covers overheads too)", f: (o) => nz(o.inc_res), den: (o) => nz(o.research), lvl: 1 },
+      { label: "Research spend less research grant income (negative = contribution to overheads)", f: (o) => nz(o.research) - nz(o.inc_res), lvl: 1, gap: true, gapLabel: "Research: spend less grant income" },
+    ] },
+    { key: "support", label: "Support services", c: "--c2", rows: [
+      { label: "Support services total", f: (o) => nz(o.acserv) + nz(o.gen_ed) + nz(o.facilities), lvl: 0 },
+      { label: "Academic services (library, IT, learning resources)", f: (o) => nz(o.acserv), lvl: 1, gap: true },
+      { label: "Student services & facilities (careers, wellbeing, sport, SU)", f: (o) => nz(o.facilities), lvl: 1, gap: true },
+      { label: "Bursaries & scholarships (passed to students)", f: (o) => orNaN(o, ["ge_nat", "ge_prov", "ge_oth"], () => nz(o.ge_nat) + nz(o.ge_prov)), lvl: 1, gap: true },
+      { label: "Other general education (exams, fellowships, etc.)", f: (o) => orNaN(o, ["ge_nat", "ge_prov", "ge_oth"], () => nz(o.ge_oth)), lvl: 1, gap: true },
+      { sub: "By type of cost" },
+      ...natRows(["acserv", "gen_ed", "facilities"]).map((r) => ({ ...r, lvl: 1 })),
+    ] },
+    { key: "mgmt", label: "Management & admin", c: "--c3", rows: [
+      { label: "Central administration & services", f: (o) => nz(o.admin), lvl: 0, gap: true },
+      { sub: "By type of cost" },
+      ...natRows(["admin"]).map((r) => ({ ...r, lvl: 1 })),
+    ] },
+    { key: "estates", label: "Estates", c: "--c4", rows: [
+      { label: "Premises total", f: (o) => nz(o.premises), lvl: 0 },
+      { label: "Repairs & maintenance", f: (o) => orNaN(o, ["pr_rm", "pr_oth"], () => nz(o.pr_rm)), lvl: 1, gap: true },
+      { label: "Other premises costs (utilities, rates, cleaning, security, depreciation, interest)", f: (o) => orNaN(o, ["pr_rm", "pr_oth"], () => nz(o.pr_oth)), lvl: 1, gap: true, gapLabel: "Other premises running costs" },
+      { sub: "By type of cost" },
+      ...natRows(["premises"]).map((r) => ({ ...r, lvl: 1 })),
+    ] },
+    { key: "otherops", label: "Residences, catering & other", c: "--c5", rows: [
+      { label: "Residences & catering: net cost (spend less income)", f: (o) => nz(o.resid) - nz(o.inc_resid) - nz(o.inc_cater), lvl: 0 },
+      { label: "Residences: net cost", f: (o) => orNaN(o, ["rc_res", "rc_cat"], () => nz(o.rc_res) - nz(o.inc_resid)), lvl: 1, gap: true },
+      { label: "Spend", f: (o) => orNaN(o, ["rc_res", "rc_cat"], () => nz(o.rc_res)), lvl: 2 },
+      { label: "Income", f: (o) => nz(o.inc_resid), lvl: 2 },
+      { label: "Catering & conferences: net cost", f: (o) => orNaN(o, ["rc_res", "rc_cat"], () => nz(o.rc_cat) - nz(o.inc_cater)), lvl: 1, gap: true },
+      { label: "Spend", f: (o) => orNaN(o, ["rc_res", "rc_cat"], () => nz(o.rc_cat)), lvl: 2 },
+      { label: "Income", f: (o) => nz(o.inc_cater), lvl: 2 },
+      { label: "Other expenditure", f: (o) => nz(o.other_ex_pen), lvl: 1, gap: true },
+    ] },
+  ];
+  if (S.pension) spec.push({ key: "pension", label: "Pension adjustment", c: "--sector", rows: [{ label: "Pension cost adjustment (non-cash)", f: (o) => nz(o.pension_adj), lvl: 0, gap: true }] });
+  return spec;
+}
+function rowStat(row, U, peers, yi) {
+  const bo = FIN[yi].get(S.bench);
+  const den = row.den || ((o) => o.inc);
+  const val = (o) => { const n = row.f(o), d = den(o); return { n, d, r: finite(n) && d > 0 ? n / d : NaN }; };
+  const collect = (list) => list.map((x) => val(FIN[yi].get(x.id))).filter((x) => finite(x.r));
+  const avg = (L) => (!L.length ? NaN : S.method === "pooled" ? L.reduce((a, x) => a + x.n, 0) / L.reduce((a, x) => a + x.d, 0) : L.reduce((a, x) => a + x.r, 0) / L.length);
+  const b = val(bo), P = collect(peers.list), Sx = collect(U.sector);
+  const pAvg = avg(P), sAvg = avg(Sx), gapP = b.r - pAvg;
+  return { b, pAvg, sAvg, gapP, gapM: row.den ? NaN : gapP * bo.inc, rank: finite(b.r) ? P.filter((x) => x.r > b.r).length + 1 : NaN, of: P.length + 1, peerRs: P.map((x) => x.r) };
+}
+function renderDetail(U) {
+  const yi = S.year, b = U.bench, peers = peerSet(U);
+  document.getElementById("gapPeer").textContent = peers.label;
+  document.getElementById("gapEyebrow").textContent = `${YEARS[yi]} · ${S.pension ? "pension adjustments included" : "pension adjustments excluded"} · ${S.method === "pooled" ? "pooled £" : "provider average"}`;
+  const cards = document.getElementById("detailCards"), gapHost = document.getElementById("gapChart");
+  if (!b) { cards.innerHTML = ""; gapHost.innerHTML = `<p class="note">${esc(fullName(S.bench))} has no finance return for ${YEARS[yi]}.</p>`; return; }
+  const gaps = [];
+  const bn = esc(shortName(S.bench));
+  const thead = `<thead><tr><th>Line</th><th>${bn}<br><span class="tag">£</span></th><th>${bn}<br><span class="tag">per £1</span></th><th>${esc(peers.label)}<br><span class="tag">average</span></th><th>Sector<br><span class="tag">average</span></th><th>Gap to peers<br><span class="tag">per £1</span></th><th>Gap to peers<br><span class="tag">£m</span></th><th>Rank in peers<br><span class="tag">highest = 1st</span></th><th>Peer spread</th></tr></thead>`;
+  const pfmt = (v) => pence(v, 2);
+  const html = detailSpec().map((h) => {
+    let body = "", headStat = null;
+    for (const row of h.rows) {
+      if (row.sub) { body += `<tr class="sub"><td colspan="9">${esc(row.sub)}</td></tr>`; continue; }
+      const st = rowStat(row, U, peers, yi);
+      if (row.lvl === 0 && !headStat) headStat = st;
+      if (row.gap && finite(st.gapM)) gaps.push({ label: row.gapLabel || row.label, st, head: h });
+      const gcls = !finite(st.gapP) || Math.abs(st.gapP) < 0.0005 ? "" : st.gapP > 0 ? "gap-more" : "gap-less";
+      const cls = row.lvl === 0 ? "head" : row.lvl === 2 ? "l2" : "l1";
+      const ratioUnit = row.den ? ` <span class="tag">(ratio)</span>` : "";
+      body += `<tr class="${cls}"><td>${esc(row.label)}${ratioUnit}</td><td class="num">${row.den ? "–" : money(st.b.n)}</td><td class="num">${pfmt(st.b.r)}</td><td class="num">${pfmt(st.pAvg)}</td><td class="num">${pfmt(st.sAvg)}</td>` +
+        `<td class="num ${gcls}">${signedP(st.gapP, 2)}</td><td class="num ${gcls}">${gapMoney(st.gapM)}</td><td class="num rk">${finite(st.rank) ? `${ord(st.rank)} of ${st.of}` : "–"}</td><td class="rng">${rangeSvg(st.peerRs, st.b.r, row.label, pfmt)}</td></tr>`;
+    }
+    const hs = headStat;
+    return `<section class="card" aria-label="${esc(h.label)}">
+      <div class="det-head"><h2><i class="sw" style="background:var(${h.c});width:12px;height:12px;margin-right:8px;vertical-align:1px"></i>${esc(h.label)}</h2>
+      ${hs ? `<div class="figs"><span>${bn} <b>${pence(hs.b.r)}</b></span><span>${esc(peers.label)} <b>${pence(hs.pAvg)}</b></span><span>Sector <b>${pence(hs.sAvg)}</b></span><span>Gap <b>${gapMoney(hs.gapM)}</b></span></div>` : ""}</div>
+      <div class="tbl-wrap" style="max-height:none"><table class="det">${thead}<tbody>${body}</tbody></table></div>
+    </section>`;
+  }).join("");
+  cards.innerHTML = html + spreadKey() + `<p class="note">All rows are pence per £1 of total income unless marked as a ratio. Sub-lines only include providers that report that breakdown, so they may not add up exactly to the heading average.</p>`;
+  bindTips(cards);
+  renderGapChart(gaps, peers.label);
+  renderDetailTrend();
+}
+function detailLines() {
+  const out = [];
+  for (const h of detailSpec()) h.rows.forEach((row, i) => { if (!row.sub) out.push({ id: `${h.key}:${i}`, head: h.label, row }); });
+  return out;
+}
+function renderDetailTrend() {
+  const lines = detailLines(), sel = document.getElementById("fDetLine");
+  if (!S.detLine || !lines.some((l) => l.id === S.detLine)) S.detLine = (lines.find((l) => l.row.gap) || lines[0]).id;
+  let html = "", last = null;
+  for (const l of lines) {
+    if (l.head !== last) { if (last) html += "</optgroup>"; html += `<optgroup label="${esc(l.head)}">`; last = l.head; }
+    const parent = l.row.lvl === 2 ? "– " : "";
+    html += `<option value="${l.id}" ${l.id === S.detLine ? "selected" : ""}>${parent}${esc(l.row.label)}</option>`;
+  }
+  sel.innerHTML = html + "</optgroup>";
+  const L = lines.find((l) => l.id === S.detLine);
+  const series = [{ label: shortName(S.bench), color: "--accent", w: 2.5, pts: [] }, { label: "", color: "--group", w: 2, pts: [] }, { label: "Sector average", color: "--sector", w: 2, dash: "5 4", pts: [] }];
+  YEARS.forEach((y, yj) => {
+    const Uj = universe(yj), Pj = peerSet(Uj);
+    series[1].label = Pj.label + " average";
+    if (!FIN[yj] || !FIN[yj].get(S.bench)) { series.forEach((s) => s.pts.push(NaN)); return; }
+    const st = rowStat(L.row, Uj, Pj, yj);
+    series[0].pts.push(st.b.r); series[1].pts.push(st.pAvg); series[2].pts.push(st.sAvg);
+  });
+  lineChart(document.getElementById("detTrend"), document.getElementById("detTrendLegend"), series, (v) => pence(v, 1), true);
+}
+document.getElementById("fDetLine").onchange = (e) => { S.detLine = e.target.value; renderDetailTrend(); };
+function renderGapChart(gaps, peerLabel) {
+  const bn = shortName(S.bench);
+  document.getElementById("gapLegend").innerHTML =
+    `<span><i class="sw" style="background:var(--critical)"></i>${esc(bn)} spends more than ${esc(peerLabel)}</span><span><i class="sw" style="background:var(--group)"></i>${esc(bn)} spends less</span>`;
+  const host = document.getElementById("gapChart");
+  const W = Math.max(320, host.clientWidth || 900), narrow = W < 700;
+  const labW = narrow ? 0 : 300, rowH = narrow ? 40 : 26, top = 24;
+  const maxAbs = Math.max(500, ...gaps.map((g) => Math.abs(g.st.gapM)));
+  const plotL = labW + 56, plotW = W - plotL - 60;
+  const X = (v) => plotL + plotW / 2 + (v / maxAbs) * (plotW / 2);
+  const step = niceStep(maxAbs / (narrow ? 2 : 4));
+  const items = []; let last = null;
+  for (const gp of gaps) { if (gp.head !== last) { items.push({ sep: gp.head }); last = gp.head; } items.push(gp); }
+  const H = top + items.reduce((a, it) => a + (it.sep ? 26 : rowH), 0) + 8;
+  let g = "", y = top;
+  for (let t = -Math.floor(maxAbs / step) * step; t <= maxAbs + 1e-9; t += step) g += `<line x1="${X(t)}" x2="${X(t)}" y1="${top - 4}" y2="${H - 4}" style="stroke:${Math.abs(t) < 1e-9 ? "var(--ink-3)" : "var(--grid)"}"/><text class="ax" x="${X(t)}" y="${top - 10}" text-anchor="middle">${t === 0 ? "£0" : (t > 0 ? "+" : "−") + "£" + Math.abs(t / 1000).toFixed(Math.abs(t) < 1000 ? 1 : 0) + "m"}</text>`;
+  let total = 0;
+  for (const it of items) {
+    if (it.sep) { g += `<text class="lbl" x="0" y="${y + 18}" style="font-weight:600"><tspan style="fill:var(${it.sep.c})">■</tspan> ${esc(it.sep.label)}</text>`; y += 26; continue; }
+    const v = it.st.gapM; total += v;
+    const x0 = X(0), x1 = X(v), bh = 14, by = y + (narrow ? 20 : (rowH - bh) / 2);
+    g += narrow ? `<text class="lbl2" x="0" y="${by - 4}">${esc(it.label)}</text>` : `<text class="lbl2" x="${labW}" y="${by + bh - 3}" text-anchor="end">${esc(it.label.length > 48 ? it.label.slice(0, 46) + "…" : it.label)}</text>`;
+    const tipH = `<b>${esc(it.label)}</b><br>${esc(bn)}: <span class='num'>${pence(it.st.b.r, 2)}</span> · ${esc(peerLabel)}: <span class='num'>${pence(it.st.pAvg, 2)}</span><br>Gap: <span class='num'>${signedP(it.st.gapP, 2)} · ${gapMoney(v)}</span>`;
+    g += `<rect x="${Math.min(x0, x1)}" y="${by}" width="${Math.max(1, Math.abs(x1 - x0))}" height="${bh}" rx="2" style="fill:var(${v >= 0 ? "--critical" : "--group"})" data-tip="${tipH}"/>`;
+    g += `<text class="ax" x="${v >= 0 ? x1 + 5 : x1 - 5}" y="${by + bh - 3}" text-anchor="${v >= 0 ? "start" : "end"}">${gapMoney(v)}</text>`;
+    y += rowH;
+  }
+  host.innerHTML = svgNS(W, H, g);
+  bindTips(host);
+}
+
+// ---------- subjects tab
+const kfmt = (v) => (finite(v) ? "£" + (v / 1000).toFixed(Math.abs(v % 1000) < 1e-6 ? 0 : 1) + "k" : "–");
+const SUBJ_METRICS = {
+  spend: { label: "Total departmental spend per student FTE", f: (x) => (x.total * 1000) / x.fte, fmt: kfmt },
+  acstaff: { label: "Academic staff cost per student FTE", f: (x) => (x.ac_staff * 1000) / x.fte, fmt: kfmt },
+  othstaff: { label: "Professional & support staff cost per student FTE", f: (x) => (x.oth_staff * 1000) / x.fte, fmt: kfmt },
+  opex: { label: "Operating costs per student FTE", f: (x) => (x.opex * 1000) / x.fte, fmt: kfmt },
+  dep: { label: "Depreciation per student FTE", f: (x) => (x.dep * 1000) / x.fte, fmt: kfmt },
+  acshare: { label: "Academic staff share of departmental spend", f: (x) => x.ac_staff / x.total, fmt: (v) => pct(v, 0) },
+  res: { label: "Research income per £1 of departmental spend", f: (x) => x.res_inc / x.total, fmt: (v) => pence(v, 0) },
+};
+function areaRec(yi, id, a) {
+  const o = SUBJ[yi] && SUBJ[yi][id] && SUBJ[yi][id][a];
+  if (!o) return null;
+  const fte = nz(o.ft) + 0.5 * nz(o.pt);
+  if (fte < 50 || !(o.total > 100)) return null;
+  return { ...o, fte };
+}
+function areaVals(yi, ids, a, m) { const out = []; for (const id of ids) { const r = areaRec(yi, id, a); if (r) { const v = SUBJ_METRICS[m].f(r); if (finite(v)) out.push({ id, name: shortName(id), v }); } } return out; }
+function renderSubjectsTab(U) {
+  const yi = S.year, peers = peerSet(U), m = S.subjMetric, M = SUBJ_METRICS[m];
+  const bn = shortName(S.bench);
+  document.getElementById("subjEyebrow").textContent = `${YEARS[yi]} · peers: ${peers.label}`;
+  document.getElementById("fSubjMetric").innerHTML = Object.entries(SUBJ_METRICS).map(([k, x]) => `<option value="${k}" ${k === m ? "selected" : ""}>${esc(x.label)}</option>`).join("");
+  const peerIds = peers.list.map((x) => x.id), secIds = U.sector.map((x) => x.id);
+  const rows = AREAS.map((label, a) => {
+    const br = areaRec(yi, S.bench, a);
+    return { a, label, br, bv: br ? M.f(br) : NaN, P: areaVals(yi, peerIds, a, m), Sx: areaVals(yi, secIds, a, m) };
+  }).filter((r) => r.br || r.P.length >= 3).sort((x, y) => nz(y.br && y.br.total) - nz(x.br && x.br.total));
+  if (S.subjArea == null || !rows.some((r) => r.a === S.subjArea)) S.subjArea = (rows.find((r) => r.br) || rows[0] || {}).a;
+  document.getElementById("fSubjArea").innerHTML = rows.map((r) => `<option value="${r.a}" ${r.a === S.subjArea ? "selected" : ""}>${esc(r.label)}${r.br ? "" : " (no " + esc(bn) + " data)"}</option>`).join("");
+
+  // matrix chart
+  const host = document.getElementById("subjMatrix");
+  const W = Math.max(320, host.clientWidth || 900), narrow = W < 700;
+  const labW = narrow ? 0 : 280, rowH = narrow ? 58 : 44, top = 28, padR = 20;
+  const all = rows.flatMap((r) => [...r.P.map((p) => p.v), r.bv]).filter(finite).sort((x, y) => x - y);
+  if (!all.length) { host.innerHTML = `<p class="note">No subject data for these filters.</p>`; }
+  else {
+    let lo = Math.min(0, quant(all, 0)), hi = quant(all, 0.97);
+    rows.forEach((r) => { if (finite(r.bv)) hi = Math.max(hi, r.bv); });
+    hi *= 1.04;
+    const X = (v) => labW + ((Math.min(hi, Math.max(lo, v)) - lo) / (hi - lo)) * (W - labW - padR);
+    const H = top + rows.length * rowH + 24;
+    const step = niceStep((hi - lo) / (narrow ? 3 : 6));
+    let g = "";
+    for (let t = Math.ceil(lo / step) * step; t <= hi + 1e-9; t += step) g += `<line x1="${X(t)}" x2="${X(t)}" y1="${top - 6}" y2="${H - 22}" style="stroke:var(--grid)"/><text class="ax" x="${X(t)}" y="${H - 6}" text-anchor="middle">${M.fmt(t)}</text>`;
+    rows.forEach((r, i) => {
+      const yc = top + i * rowH + (narrow ? 36 : rowH / 2), sel = r.a === S.subjArea;
+      if (sel) g += `<rect x="0" y="${yc - rowH / 2}" width="${W}" height="${rowH}" style="fill:var(--accent-soft);fill-opacity:.6"/>`;
+      const sub = r.br ? `${Math.round(r.br.fte).toLocaleString()} FTE` : "no students/spend";
+      g += narrow ? `<text class="lbl" x="0" y="${yc - 20}">${esc(r.label)} <tspan class="lbl2">${sub}</tspan></text>`
+        : `<text class="lbl" x="${labW - 12}" y="${yc - 2}" text-anchor="end">${esc(r.label)}</text><text class="lbl2" x="${labW - 12}" y="${yc + 13}" text-anchor="end">${esc(bn)}: ${sub}</text>`;
+      g += `<line x1="${labW}" x2="${W - padR}" y1="${yc}" y2="${yc}" style="stroke:var(--grid)"/>`;
+      r.P.forEach((p) => {
+        const jy = yc + (hash(p.id + r.a) - 0.5) * rowH * 0.4;
+        g += `<circle cx="${X(p.v)}" cy="${jy}" r="4" style="fill:var(--group);fill-opacity:.6;stroke:var(--surface);stroke-width:1" data-tip="<b>${esc(p.name)}</b><br>${esc(r.label)}: <span class='num'>${M.fmt(p.v)}</span>"/>`;
+      });
+      const sm = median(r.Sx.map((p) => p.v)), pm = median(r.P.map((p) => p.v));
+      if (finite(sm)) g += `<line x1="${X(sm)}" x2="${X(sm)}" y1="${yc - rowH * 0.3}" y2="${yc + rowH * 0.3}" style="stroke:var(--sector);stroke-width:2;stroke-dasharray:3 2" data-tip="Sector median<br><span class='num'>${M.fmt(sm)}</span> (${r.Sx.length} providers)"/>`;
+      if (finite(pm)) g += `<line x1="${X(pm)}" x2="${X(pm)}" y1="${yc - rowH * 0.32}" y2="${yc + rowH * 0.32}" style="stroke:var(--ink);stroke-width:2.5" data-tip="${esc(peers.label)} median<br><span class='num'>${M.fmt(pm)}</span> (${r.P.length} providers)"/>`;
+      if (finite(r.bv)) g += `<circle cx="${X(r.bv)}" cy="${yc}" r="7" style="fill:var(--accent);stroke:var(--surface);stroke-width:2" data-tip="<b>${esc(bn)}</b><br>${esc(r.label)}: <span class='num'>${M.fmt(r.bv)}</span>"/>`;
+      g += `<rect x="0" y="${yc - rowH / 2}" width="${labW || W}" height="${rowH}" style="fill:transparent;cursor:pointer" data-area="${r.a}"/>`;
+    });
+    host.innerHTML = svgNS(W, H, g) + `<div class="legend" style="margin-top:6px"><span><svg width="12" height="12" aria-hidden="true"><circle cx="6" cy="6" r="5" style="fill:var(--accent)"/></svg>${esc(bn)}</span><span><svg width="10" height="10" aria-hidden="true"><circle cx="5" cy="5" r="4" style="fill:var(--group);fill-opacity:.6"/></svg>${esc(peers.label)}</span><span><svg width="6" height="14" aria-hidden="true"><line x1="3" x2="3" y1="0" y2="14" style="stroke:var(--ink);stroke-width:2.5"/></svg>Peer median</span><span><svg width="6" height="14" aria-hidden="true"><line x1="3" x2="3" y1="0" y2="14" style="stroke:var(--sector);stroke-width:2;stroke-dasharray:3 2"/></svg>Sector median</span></div>`;
+    bindTips(host);
+    host.querySelectorAll("[data-area]").forEach((el) => (el.onclick = () => { S.subjArea = +el.dataset.area; render(); }));
+  }
+
+  // scorecard
+  const med = (yiX, ids, a, mm) => median(areaVals(yiX, ids, a, mm).map((p) => p.v));
+  const cell = (a, mm, br) => {
+    const F = SUBJ_METRICS[mm];
+    const b = br ? F.f(br) : NaN, pm = med(yi, peerIds, a, mm), sm = med(yi, secIds, a, mm);
+    const d = finite(b) && finite(pm) && pm !== 0 ? (b / pm - 1) : NaN;
+    const dcls = !finite(d) || Math.abs(d) < 0.02 ? "" : d > 0 ? "gap-more" : "gap-less";
+    return `<td class="num">${F.fmt(b)}</td><td class="num">${F.fmt(pm)}</td><td class="num">${F.fmt(sm)}</td><td class="num ${dcls}">${finite(d) ? (d >= 0 ? "+" : "−") + Math.abs(d * 100).toFixed(0) + "%" : "–"}</td>`;
+  };
+  const grpHead = (lab) => `<th colspan="4" style="text-align:center;border-bottom:1px solid var(--rule)">${lab}</th>`;
+  const subHead = `<th>${esc(bn)}</th><th>Peer median</th><th>Sector median</th><th>vs peers</th>`;
+  const t = document.getElementById("subjTable");
+  t.innerHTML = `<thead><tr><th rowspan="2">Subject area</th><th rowspan="2">${esc(bn)}<br><span class="tag">student FTE</span></th><th rowspan="2">${esc(bn)}<br><span class="tag">dept spend</span></th>${grpHead("Spend per student FTE")}${grpHead(esc(m === "spend" || m === "res" ? SUBJ_METRICS.acstaff.label : M.label))}${grpHead("Research income per £1 spend")}</tr><tr>${subHead}${subHead}${subHead}</tr></thead><tbody>` +
+    rows.map((r) => `<tr class="${r.a === S.subjArea ? "is-bench" : ""}" data-area="${r.a}" style="cursor:pointer"><td>${esc(r.label)}</td><td class="num">${r.br ? Math.round(r.br.fte).toLocaleString() : "–"}</td><td class="num">${r.br ? money(r.br.total) : "–"}</td>${cell(r.a, "spend", r.br)}${cell(r.a, m === "spend" || m === "res" ? "acstaff" : m, r.br)}${cell(r.a, "res", r.br)}</tr>`).join("") + "</tbody>";
+  t.querySelectorAll("tr[data-area]").forEach((tr) => (tr.onclick = () => { S.subjArea = +tr.dataset.area; render(); }));
+
+  // trend for selected area
+  const a = S.subjArea;
+  document.getElementById("subjTrendTitle").textContent = `${AREAS[a] || ""}: ${M.label}`;
+  const series = [{ label: bn, color: "--accent", w: 2.5, pts: [] }, { label: `${peers.label} median`, color: "--group", w: 2, pts: [] }, { label: "Sector median", color: "--sector", w: 2, dash: "5 4", pts: [] }];
+  YEARS.forEach((y, yj) => {
+    const Uj = universe(yj), Pj = peerSet(Uj);
+    const br = areaRec(yj, S.bench, a);
+    series[0].pts.push(br ? M.f(br) : NaN);
+    series[1].pts.push(median(areaVals(yj, Pj.list.map((x) => x.id), a, m).map((p) => p.v)));
+    series[2].pts.push(median(areaVals(yj, Uj.sector.map((x) => x.id), a, m).map((p) => p.v)));
+  });
+  lineChart(document.getElementById("subjTrend"), document.getElementById("subjTrendLegend"), series, M.fmt, m !== "res");
+  const nRep = U.sector.filter((x) => SUBJ[yi] && SUBJ[yi][x.id]).length;
+  document.getElementById("subjNote").textContent = `${nRep} of ${U.sector.length} sector providers report spend by subject for ${YEARS[yi]} (some English providers are exempt). A subject is included for a provider when it has at least 50 student FTE and £100k of departmental spend. Student FTE counts part-time students as 0.5. Departmental spend includes departmental research not funded by grants, so research-heavy subjects naturally show more spend per student.`;
+}
+document.getElementById("fSubjMetric").onchange = (e) => { S.subjMetric = e.target.value; render(); };
+document.getElementById("fSubjArea").onchange = (e) => { S.subjArea = +e.target.value; render(); };
+
+// generic multi-series line chart over YEARS
+function lineChart(host, legendEl, series, fmt, zeroBase) {
+  legendEl.innerHTML = series.map((s) => `<span><svg width="22" height="10" aria-hidden="true"><line x1="0" x2="22" y1="5" y2="5" style="stroke:var(${s.color});stroke-width:${s.w};${s.dash ? `stroke-dasharray:${s.dash}` : ""}"/></svg>${esc(s.label)}</span>`).join("");
+  const W = Math.max(320, host.clientWidth || 900), H = 260, L = 58, R = W < 640 ? 16 : 150, T = 14, B = 30;
+  const vals = series.flatMap((s) => s.pts).filter(finite);
+  if (!vals.length) { host.innerHTML = `<p class="note">No data.</p>`; return; }
+  let lo = Math.min(...vals), hi = Math.max(...vals);
+  if (zeroBase) lo = Math.min(0, lo);
+  const pad = (hi - lo) * 0.08 || 1; hi += pad; if (!zeroBase) lo -= pad;
+  const step = niceStep((hi - lo) / 5); lo = Math.floor(lo / step) * step; hi = Math.ceil(hi / step) * step;
+  const X = (i) => L + (i / (YEARS.length - 1)) * (W - L - R), Y = (v) => T + (1 - (v - lo) / (hi - lo)) * (H - T - B);
+  let g = "";
+  for (let t = lo; t <= hi + 1e-9; t += step) g += `<line x1="${L}" x2="${W - R}" y1="${Y(t)}" y2="${Y(t)}" style="stroke:var(--grid)"/><text class="ax" x="${L - 6}" y="${Y(t) + 4}" text-anchor="end">${fmt(t)}</text>`;
+  YEARS.forEach((y, i) => { if (W > 640 || i % 2 === 1) g += `<text class="ax" x="${X(i)}" y="${H - 8}" text-anchor="middle">${y}</text>`; });
+  g += `<line x1="${X(S.year)}" x2="${X(S.year)}" y1="${T}" y2="${H - B}" style="stroke:var(--ink-3);stroke-dasharray:2 3"/>`;
+  [...series].reverse().forEach((s) => {
+    let d = "", pen = false;
+    s.pts.forEach((v, i) => { if (!finite(v)) { pen = false; return; } d += (pen ? "L" : "M") + X(i).toFixed(1) + " " + Y(v).toFixed(1); pen = true; });
+    g += `<path d="${d}" style="fill:none;stroke:var(${s.color});stroke-width:${s.w};stroke-linejoin:round;${s.dash ? `stroke-dasharray:${s.dash}` : ""}"/>`;
+    s.pts.forEach((v, i) => { if (finite(v)) g += `<circle cx="${X(i)}" cy="${Y(v)}" r="${i === S.year ? 4.5 : 3}" style="fill:var(${s.color});stroke:var(--surface);stroke-width:1.5"/>`; });
+  });
+  if (W >= 640) {
+    const ends = series.map((s) => { const li = s.pts.map((v, i) => (finite(v) ? i : -1)).filter((i) => i >= 0).pop(); return li == null ? null : { s, li, y: Y(s.pts[li]) + 4 }; }).filter(Boolean).sort((a, b) => a.y - b.y);
+    for (let i = 1; i < ends.length; i++) if (ends[i].y - ends[i - 1].y < 14) ends[i].y = ends[i - 1].y + 14;
+    ends.forEach((e) => (g += `<text class="lbl2" x="${X(e.li) + 8}" y="${e.y}" style="fill:var(${e.s.color === "--accent" ? "--accent" : "--ink-2"})">${esc(e.s.label.length > 20 ? e.s.label.slice(0, 19) + "…" : e.s.label)}</text>`));
+  }
+  YEARS.forEach((y, i) => {
+    const x0 = i === 0 ? L : (X(i - 1) + X(i)) / 2, x1 = i === YEARS.length - 1 ? W - R : (X(i) + X(i + 1)) / 2;
+    const html = `<b>${y}</b><br>` + series.map((s) => `${esc(s.label)}: <span class='num'>${fmt(s.pts[i])}</span>`).join("<br>");
+    g += `<rect x="${x0}" y="${T}" width="${x1 - x0}" height="${H - T - B}" style="fill:transparent" data-tip="${html}"/>`;
+  });
+  host.innerHTML = svgNS(W, H, g);
+  bindTips(host);
+}
+
+// ---------- tabs
+const TABS = ["overview", "detail", "subjects"];
+let TAB = "overview";
+try { const h = location.hash.slice(1); TAB = TABS.includes(h) ? h : localStorage.getItem("ukhe-pfp-tab") || "overview"; } catch (e) {}
+function setTab(t) {
+  TAB = TABS.includes(t) ? t : "overview";
+  document.querySelectorAll(".tabs [role=tab]").forEach((b) => { b.setAttribute("aria-selected", b.dataset.tab === TAB ? "true" : "false"); b.tabIndex = b.dataset.tab === TAB ? 0 : -1; });
+  TABS.forEach((x) => (document.getElementById("pane-" + x).hidden = x !== TAB));
+  try { localStorage.setItem("ukhe-pfp-tab", TAB); } catch (e) {}
+}
+document.querySelector(".tabs").addEventListener("click", (e) => { const b = e.target.closest("[role=tab]"); if (!b) return; setTab(b.dataset.tab); render(); });
+document.querySelector(".tabs").addEventListener("keydown", (e) => {
+  if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
+  const i = (TABS.indexOf(TAB) + (e.key === "ArrowRight" ? 1 : TABS.length - 1)) % TABS.length;
+  setTab(TABS[i]); document.getElementById("tab-" + TAB).focus(); render();
+});
+setTab(TAB);
+
+// ---------- status line
+function renderStatus(U) {
+  const gs = selGroups();
+  const G = primaryGroup(U);
+  document.getElementById("statusLine").innerHTML =
+    `${YEARS[S.year]} · ${U.sector.length} sector providers` + (G ? ` · ${G.list.length} in ${esc(G.label)}` : " · no group selected") +
+    ` · pension adjustments ${S.pension ? "included" : "excluded"}` + (S.surplus !== "all" ? ` · ${S.surplus} providers only (${esc(shortName(S.bench))} always shown)` : "") +
+    ` · benchmark excluded from averages`;
+  document.querySelectorAll(".js-bench").forEach((el) => (el.textContent = shortName(S.bench)));
+  document.getElementById("benchNameLede").textContent = fullName(S.bench).replace(/^The /, "");
+}
+
+function render() {
+  hideTip();
+  const U = universe(S.year); lastU = U;
+  renderGroupChips(U); renderStatus(U);
+  if (TAB === "detail") renderDetail(U);
+  else if (TAB === "subjects") renderSubjectsTab(U);
+  else { renderMetricPills(); renderTiles(U); renderSplit(U); renderStrip(U); renderTrend(); renderInvest(U); renderLeague(U); }
+  if (document.getElementById("customBox").open) renderPicker();
+}
+let rt; addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(render, 150); });
+render();
+})();
+</script>
