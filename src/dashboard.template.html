@@ -4,7 +4,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&display=swap">
 <style>
-/* Layout: a management-accounts pack. Sticky filter ledger on top, summary tiles, then schedules (£1 split, distribution, trend, investment, league, subjects). Reading is the one accent colour on every chart. */
+/* Layout: a management-accounts pack. Sticky filter ledger on top, summary tiles, then schedules (£1 split, distribution, trend, investment, leagues). Reading is the one accent colour on every chart. */
 :root {
   --bg: #f4f5f6;
   --surface: #ffffff;
@@ -220,7 +220,6 @@ dl.defs dd { margin: 0; color: var(--ink-2); }
   <nav class="tabs" role="tablist" aria-label="Views">
     <button type="button" role="tab" id="tab-overview" data-tab="overview" aria-selected="true" aria-controls="pane-overview">Overview</button>
     <button type="button" role="tab" id="tab-detail" data-tab="detail" aria-selected="false" aria-controls="pane-detail">Institution detail</button>
-    <button type="button" role="tab" id="tab-subjects" data-tab="subjects" aria-selected="false" aria-controls="pane-subjects">Subjects</button>
   </nav>
 
   <div class="pane" id="pane-overview" role="tabpanel" aria-labelledby="tab-overview">
@@ -320,38 +319,6 @@ dl.defs dd { margin: 0; color: var(--ink-2); }
     <div id="detailCards" class="detail-cards"></div>
   </div>
 
-  <div class="pane" id="pane-subjects" role="tabpanel" aria-labelledby="tab-subjects" hidden>
-    <section class="card" aria-labelledby="h-subjx">
-      <div class="sec-head"><div>
-        <div class="eyebrow">Subjects · academic departments only · <span id="subjEyebrow"></span></div>
-        <h2 id="h-subjx">How efficient is each subject area?</h2>
-        <p>Direct costs per £1 of each department's income (teaching and research), so research-heavy departments aren't penalised for their research budgets. Each row shows every peer as a dot, the peer median as a solid tick, the sector median as a dashed tick, and <span class="js-bench bench">Reading</span> as the large dot.</p>
-      </div></div>
-      <div class="toolbar">
-        <label class="field"><span>Measure</span><select id="fSubjMetric"></select></label>
-        <label class="field"><span>Subject area (highlight and trend)</span><select id="fSubjArea"></select></label>
-      </div>
-      <div class="chart" id="subjMatrix"></div>
-    </section>
-    <section class="card" aria-labelledby="h-subjt">
-      <div class="sec-head"><div>
-        <div class="eyebrow">Subject scorecard · medians</div>
-        <h2 id="h-subjt"><span class="js-bench bench">Reading</span> against peers, subject by subject</h2>
-        <p>Click a row to see its trend.</p>
-      </div></div>
-      <div class="tbl-wrap" style="max-height:none"><table id="subjTable" class="det"></table></div>
-    </section>
-    <section class="card" aria-labelledby="h-subjtr">
-      <div class="sec-head"><div>
-        <div class="eyebrow">Trend · same filters applied in every year</div>
-        <h2 id="h-subjtr"><span id="subjTrendTitle"></span></h2>
-      </div></div>
-      <div class="legend" id="subjTrendLegend"></div>
-      <div class="chart" id="subjTrend"></div>
-      <p class="note" id="subjNote"></p>
-    </section>
-  </div>
-
   <section class="card" aria-labelledby="h-notes">
     <div class="sec-head"><div><div class="eyebrow">Method</div><h2 id="h-notes">Definitions and caveats</h2></div></div>
     <dl class="defs">
@@ -366,10 +333,9 @@ dl.defs dd { margin: 0; color: var(--ink-2); }
       <dt>Capital investment</dt><dd>HESA Table 9 total actual capital spend, split into buildings and equipment plus intangible assets. Capital spend is lumpy, so the 3-year average divides three years of spend by three years of income.</dd>
       <dt>Averages</dt><dd>Provider average gives each provider equal weight. Pooled £ adds up money across the group, so large providers dominate. The benchmark is always excluded from group and sector averages; medians appear on the distribution chart.</dd>
       <dt>Mission groups</dt><dd>Memberships as at 2026, applied to every year. "Reading comparators" is a starting peer set of research-intensive universities outside the Russell Group; edit <span class="num">data/mission_groups.csv</span> to change it.</dd>
-      <dt>Coverage</dt><dd>From 2018/19 some English providers didn't have to report the subject (cost centre) breakdown, and providers that joined later or haven't yet reported a year are missing from it. Small and specialist providers are excluded by default through the minimum income filter.</dd>
+      <dt>Coverage</dt><dd>Providers that joined later or haven't yet reported a year are missing from it; some sub-lines (e.g. research by funder, residences vs catering) aren't reported by every provider. Small and specialist providers are excluded by default through the minimum income filter.</dd>
       <dt>Institution detail tab</dt><dd>Breaks each Overview heading into HESA Table 8 activity lines and types of cost (staff, operating, depreciation, interest). Research cost recovery compares research grant income (Table 1) with research grant spend. Residences and catering are shown net of their income (Table 7). Gaps are differences in pence per £1 of income, so providers of different sizes compare fairly. Providers that don't report a breakdown are left out of that line's average.</dd>
-      <dt>Subjects tab</dt><dd>Measures each subject's direct costs per £1 of its own income, so departments with large research budgets aren't penalised. <b>Department income</b> (estimated) = tuition fees plus teaching grant (OfS teaching grant and DfE teacher training funding in England), shared out by the subject's share of student FTE (Student Table 49, full-time plus half of part-time), plus research grants and contracts income for the subject's cost centres (Finance Table 5), plus QR (Research England research grants) shared by research grant income. Scotland, Wales and Northern Ireland don't split their funding council grant, so it is shared half by student FTE and half by research income. <b>Direct costs</b> = academic department spend for the subject's cost centres (Table 8) plus a share of research grant spend in proportion to research grant income. Central costs aren't allocated, so 1 − direct costs per £1 is the subject's contribution to central costs and surplus. Cost centres and CAH subjects are matched into nine broad areas: medicine, health and psychology (101–107 / CAH 01, 02, 04); biosciences, agriculture, vet and sport (108–110, 112 / 03, 05, 06); physical and environmental sciences and maths (111, 113, 114, 122, 124 / 07, 09, 26); engineering and computing (115–121 / 10, 11); architecture and built environment (123 / 13); social sciences and law (127–132 / 15, 16); business and management (133–134 / 17); education (135–136 / 22, 23); arts, humanities and languages (125–126, 137–145 / 19, 20, 24, 25). Providers assign costs to cost centres differently, so treat single-subject outliers with care. Comparisons use medians.</dd>
-      <dt>Source</dt><dd>HESA Higher Education Provider Data: Finance, Tables 1, 5, 6, 7, 8, 9 and 14 (2015/16 to 2024/25, last updated May 2026), and HESA Student Table 49 (January 2026). Licensed under CC BY 4.0. All money is in £ thousands at source.</dd>
+      <dt>Source</dt><dd>HESA Higher Education Provider Data: Finance, Tables 1, 6, 7, 8, 9 and 14 (2015/16 to 2024/25, last updated May 2026). Licensed under CC BY 4.0. All money is in £ thousands at source.</dd>
     </dl>
   </section>
 </div>
@@ -380,15 +346,12 @@ dl.defs dd { margin: 0; color: var(--ink-2); }
 (() => {
 "use strict";
 const D = JSON.parse(document.getElementById("data").textContent);
-const FC = D.fin_cols, SC = D.subj_cols, YEARS = D.years, P = D.providers;
+const FC = D.fin_cols, YEARS = D.years, P = D.providers;
 const READING = "10007802";
 
 // ---------- indexes
 const FIN = {};
 for (const r of D.fin) { const o = { id: r[0] }; FC.forEach((c, i) => (o[c] = r[2 + i])); (FIN[r[1]] ||= new Map()).set(r[0], o); }
-const SUBJ = {};
-for (const r of D.subj) { const o = {}; SC.forEach((c, i) => (o[c] = r[3 + i] ?? 0)); ((SUBJ[r[1]] ||= {})[r[0]] ||= {})[r[2]] = o; }
-const AREAS = D.areas;
 const CUSTOM = "Custom peer set";
 const shortName = (id) => (P[id] ? P[id][0] : id)
   .replace(/^The /, "").replace(/^University of /, "").replace(/ University$/, "")
@@ -430,7 +393,7 @@ const PILL_METRICS = ["acaddel", "support", "mgmt", "estates", "otherops", "surp
 const S = {
   year: YEARS.length - 1, bench: READING, pension: false, surplus: "all", nation: "all", minInc: 20000,
   method: "mean", groups: new Set(["Reading comparators (editable)"]), detail: false, metric: "acaddel",
-  inv3: true, subjMetric: "acstaff", subjArea: null, detLine: null, custom: new Set(), sort: { k: "acaddel", dir: -1 }, search: "",
+  inv3: true, detLine: null, custom: new Set(), sort: { k: "acaddel", dir: -1 }, search: "",
 };
 try {
   const saved = JSON.parse(localStorage.getItem("ukhe-pfp") || "null");
@@ -881,7 +844,7 @@ function renderLeague(U) {
   });
 }
 
-// ---------- shared helpers for detail + subject tabs
+// ---------- shared helpers for the detail tab
 const nz = (x) => (x == null ? 0 : x);
 const peerSet = (U) => {
   const G = primaryGroup(U);
@@ -1079,110 +1042,6 @@ function renderGapChart(gaps, peerLabel) {
   bindTips(host);
 }
 
-// ---------- subjects tab
-const p0 = (v) => pence(v, 0);
-const SUBJ_METRICS = {
-  acstaff: { label: "Academic staff cost per £1 of department income", f: (x) => x.c_as / x.inc, fmt: p0 },
-  direct: { label: "All direct costs per £1 of department income", f: (x) => x.c_total / x.inc, fmt: p0 },
-  othstaff: { label: "Professional & support staff cost per £1 of department income", f: (x) => x.c_os / x.inc, fmt: p0 },
-  opex: { label: "Operating costs per £1 of department income", f: (x) => x.c_op / x.inc, fmt: p0 },
-  dep: { label: "Depreciation per £1 of department income", f: (x) => x.c_dp / x.inc, fmt: p0 },
-  contrib: { label: "Contribution to central costs per £1 of department income", f: (x) => 1 - x.c_total / x.inc, fmt: p0 },
-  resshare: { label: "Research share of department income", f: (x) => x.inc_resx / x.inc, fmt: (v) => pct(v, 0) },
-};
-function areaRec(yi, id, a) {
-  const o = SUBJ[yi] && SUBJ[yi][id] && SUBJ[yi][id][a];
-  if (!o) return null;
-  const inc = nz(o.inc_teach) + nz(o.inc_resx);
-  if (inc < 250 || !(o.c_total > 100)) return null;
-  return { ...o, inc };
-}
-function areaVals(yi, ids, a, m) { const out = []; for (const id of ids) { const r = areaRec(yi, id, a); if (r) { const v = SUBJ_METRICS[m].f(r); if (finite(v)) out.push({ id, name: shortName(id), v }); } } return out; }
-function renderSubjectsTab(U) {
-  const yi = S.year, peers = peerSet(U), m = S.subjMetric, M = SUBJ_METRICS[m];
-  const bn = shortName(S.bench);
-  document.getElementById("subjEyebrow").textContent = `${YEARS[yi]} · peers: ${peers.label}`;
-  document.getElementById("fSubjMetric").innerHTML = Object.entries(SUBJ_METRICS).map(([k, x]) => `<option value="${k}" ${k === m ? "selected" : ""}>${esc(x.label)}</option>`).join("");
-  const peerIds = peers.list.map((x) => x.id), secIds = U.sector.map((x) => x.id);
-  const rows = AREAS.map((label, a) => {
-    const br = areaRec(yi, S.bench, a);
-    return { a, label, br, bv: br ? M.f(br) : NaN, P: areaVals(yi, peerIds, a, m), Sx: areaVals(yi, secIds, a, m) };
-  }).filter((r) => r.br || r.P.length >= 3).sort((x, y) => nz(y.br && y.br.inc) - nz(x.br && x.br.inc));
-  if (S.subjArea == null || !rows.some((r) => r.a === S.subjArea)) S.subjArea = (rows.find((r) => r.br) || rows[0] || {}).a;
-  document.getElementById("fSubjArea").innerHTML = rows.map((r) => `<option value="${r.a}" ${r.a === S.subjArea ? "selected" : ""}>${esc(r.label)}${r.br ? "" : " (no " + esc(bn) + " data)"}</option>`).join("");
-
-  // matrix chart
-  const host = document.getElementById("subjMatrix");
-  const W = Math.max(320, host.clientWidth || 900), narrow = W < 700;
-  const labW = narrow ? 0 : 280, rowH = narrow ? 58 : 44, top = 28, padR = 20;
-  const all = rows.flatMap((r) => [...r.P.map((p) => p.v), r.bv]).filter(finite).sort((x, y) => x - y);
-  if (!all.length) { host.innerHTML = `<p class="note">No subject data for these filters.</p>`; }
-  else {
-    let lo = Math.min(0, quant(all, 0)), hi = quant(all, 0.97);
-    rows.forEach((r) => { if (finite(r.bv)) hi = Math.max(hi, r.bv); });
-    hi *= 1.04;
-    const X = (v) => labW + ((Math.min(hi, Math.max(lo, v)) - lo) / (hi - lo)) * (W - labW - padR);
-    const H = top + rows.length * rowH + 24;
-    const step = niceStep((hi - lo) / (narrow ? 3 : 6));
-    let g = "";
-    for (let t = Math.ceil(lo / step) * step; t <= hi + 1e-9; t += step) g += `<line x1="${X(t)}" x2="${X(t)}" y1="${top - 6}" y2="${H - 22}" style="stroke:var(--grid)"/><text class="ax" x="${X(t)}" y="${H - 6}" text-anchor="middle">${M.fmt(t)}</text>`;
-    rows.forEach((r, i) => {
-      const yc = top + i * rowH + (narrow ? 36 : rowH / 2), sel = r.a === S.subjArea;
-      if (sel) g += `<rect x="0" y="${yc - rowH / 2}" width="${W}" height="${rowH}" style="fill:var(--accent-soft);fill-opacity:.6"/>`;
-      const sub = r.br ? `${money(r.br.inc)} income` : "not reported";
-      g += narrow ? `<text class="lbl" x="0" y="${yc - 20}">${esc(r.label)} <tspan class="lbl2">${sub}</tspan></text>`
-        : `<text class="lbl" x="${labW - 12}" y="${yc - 2}" text-anchor="end">${esc(r.label)}</text><text class="lbl2" x="${labW - 12}" y="${yc + 13}" text-anchor="end">${esc(bn)}: ${sub}</text>`;
-      g += `<line x1="${labW}" x2="${W - padR}" y1="${yc}" y2="${yc}" style="stroke:var(--grid)"/>`;
-      r.P.forEach((p) => {
-        const jy = yc + (hash(p.id + r.a) - 0.5) * rowH * 0.4;
-        g += `<circle cx="${X(p.v)}" cy="${jy}" r="4" style="fill:var(--group);fill-opacity:.6;stroke:var(--surface);stroke-width:1" data-tip="<b>${esc(p.name)}</b><br>${esc(r.label)}: <span class='num'>${M.fmt(p.v)}</span>"/>`;
-      });
-      const sm = median(r.Sx.map((p) => p.v)), pm = median(r.P.map((p) => p.v));
-      if (finite(sm)) g += `<line x1="${X(sm)}" x2="${X(sm)}" y1="${yc - rowH * 0.3}" y2="${yc + rowH * 0.3}" style="stroke:var(--sector);stroke-width:2;stroke-dasharray:3 2" data-tip="Sector median<br><span class='num'>${M.fmt(sm)}</span> (${r.Sx.length} providers)"/>`;
-      if (finite(pm)) g += `<line x1="${X(pm)}" x2="${X(pm)}" y1="${yc - rowH * 0.32}" y2="${yc + rowH * 0.32}" style="stroke:var(--ink);stroke-width:2.5" data-tip="${esc(peers.label)} median<br><span class='num'>${M.fmt(pm)}</span> (${r.P.length} providers)"/>`;
-      if (finite(r.bv)) g += `<circle cx="${X(r.bv)}" cy="${yc}" r="7" style="fill:var(--accent);stroke:var(--surface);stroke-width:2" data-tip="<b>${esc(bn)}</b><br>${esc(r.label)}: <span class='num'>${M.fmt(r.bv)}</span>"/>`;
-      g += `<rect x="0" y="${yc - rowH / 2}" width="${labW || W}" height="${rowH}" style="fill:transparent;cursor:pointer" data-area="${r.a}"/>`;
-    });
-    host.innerHTML = svgNS(W, H, g) + `<div class="legend" style="margin-top:6px"><span><svg width="12" height="12" aria-hidden="true"><circle cx="6" cy="6" r="5" style="fill:var(--accent)"/></svg>${esc(bn)}</span><span><svg width="10" height="10" aria-hidden="true"><circle cx="5" cy="5" r="4" style="fill:var(--group);fill-opacity:.6"/></svg>${esc(peers.label)}</span><span><svg width="6" height="14" aria-hidden="true"><line x1="3" x2="3" y1="0" y2="14" style="stroke:var(--ink);stroke-width:2.5"/></svg>Peer median</span><span><svg width="6" height="14" aria-hidden="true"><line x1="3" x2="3" y1="0" y2="14" style="stroke:var(--sector);stroke-width:2;stroke-dasharray:3 2"/></svg>Sector median</span></div>`;
-    bindTips(host);
-    host.querySelectorAll("[data-area]").forEach((el) => (el.onclick = () => { S.subjArea = +el.dataset.area; render(); }));
-  }
-
-  // scorecard
-  const med = (yiX, ids, a, mm) => median(areaVals(yiX, ids, a, mm).map((p) => p.v));
-  const cell = (a, mm, br) => {
-    const F = SUBJ_METRICS[mm];
-    const b = br ? F.f(br) : NaN, pm = med(yi, peerIds, a, mm), sm = med(yi, secIds, a, mm);
-    const d = b - pm;
-    const dcls = !finite(d) || Math.abs(d) < 0.005 ? "" : (d > 0) !== (mm === "contrib" || mm === "resshare") ? "gap-more" : "gap-less";
-    const dtxt = !finite(d) ? "–" : mm === "resshare" ? (d >= 0 ? "+" : "−") + Math.abs(d * 100).toFixed(0) + " pts" : signedP(d, 0);
-    return `<td class="num">${F.fmt(b)}</td><td class="num">${F.fmt(pm)}</td><td class="num">${F.fmt(sm)}</td><td class="num ${dcls}">${dtxt}</td>`;
-  };
-  const grpHead = (lab) => `<th colspan="4" style="text-align:center;border-bottom:1px solid var(--rule)">${lab}</th>`;
-  const subHead = `<th>${esc(bn)}</th><th>Peer median</th><th>Sector median</th><th>vs peers</th>`;
-  const t = document.getElementById("subjTable");
-  t.innerHTML = `<thead><tr><th rowspan="2">Subject area</th><th rowspan="2">${esc(bn)}<br><span class="tag">dept income</span></th><th rowspan="2">${esc(bn)}<br><span class="tag">direct costs</span></th>${grpHead("Academic staff cost per £1 income")}${grpHead(esc(m === "acstaff" || m === "contrib" ? "All direct costs per £1 income" : M.label))}${grpHead("Contribution per £1 income")}</tr><tr>${subHead}${subHead}${subHead}</tr></thead><tbody>` +
-    rows.map((r) => `<tr class="${r.a === S.subjArea ? "is-bench" : ""}" data-area="${r.a}" style="cursor:pointer"><td>${esc(r.label)}</td><td class="num">${r.br ? money(r.br.inc) : "–"}</td><td class="num">${r.br ? money(r.br.c_total) : "–"}</td>${cell(r.a, "acstaff", r.br)}${cell(r.a, m === "acstaff" || m === "contrib" ? "direct" : m, r.br)}${cell(r.a, "contrib", r.br)}</tr>`).join("") + "</tbody>";
-  t.querySelectorAll("tr[data-area]").forEach((tr) => (tr.onclick = () => { S.subjArea = +tr.dataset.area; render(); }));
-
-  // trend for selected area
-  const a = S.subjArea;
-  document.getElementById("subjTrendTitle").textContent = `${AREAS[a] || ""}: ${M.label}`;
-  const series = [{ label: bn, color: "--accent", w: 2.5, pts: [] }, { label: `${peers.label} median`, color: "--group", w: 2, pts: [] }, { label: "Sector median", color: "--sector", w: 2, dash: "5 4", pts: [] }];
-  YEARS.forEach((y, yj) => {
-    const Uj = universe(yj), Pj = peerSet(Uj);
-    const br = areaRec(yj, S.bench, a);
-    series[0].pts.push(br ? M.f(br) : NaN);
-    series[1].pts.push(median(areaVals(yj, Pj.list.map((x) => x.id), a, m).map((p) => p.v)));
-    series[2].pts.push(median(areaVals(yj, Uj.sector.map((x) => x.id), a, m).map((p) => p.v)));
-  });
-  lineChart(document.getElementById("subjTrend"), document.getElementById("subjTrendLegend"), series, M.fmt, m !== "contrib");
-  const nRep = U.sector.filter((x) => SUBJ[yi] && SUBJ[yi][x.id]).length;
-  document.getElementById("subjNote").textContent = `${nRep} of ${U.sector.length} sector providers report spend by subject for ${YEARS[yi]} (some English providers are exempt). Department income is estimated: tuition fees and teaching grant are shared out by student FTE (part-time counted as 0.5); research grant income is actual by cost centre, with QR shared by research grant income. Direct costs are departmental spend plus the department's share of research grant spend. Central costs (estates, admin, support) are not allocated, so whatever is left is the department's contribution to them. A subject is included when it has at least £250k of income and £100k of direct cost.`;
-}
-document.getElementById("fSubjMetric").onchange = (e) => { S.subjMetric = e.target.value; render(); };
-document.getElementById("fSubjArea").onchange = (e) => { S.subjArea = +e.target.value; render(); };
-
 // generic multi-series line chart over YEARS
 function lineChart(host, legendEl, series, fmt, zeroBase) {
   legendEl.innerHTML = series.map((s) => `<span><svg width="22" height="10" aria-hidden="true"><line x1="0" x2="22" y1="5" y2="5" style="stroke:var(${s.color});stroke-width:${s.w};${s.dash ? `stroke-dasharray:${s.dash}` : ""}"/></svg>${esc(s.label)}</span>`).join("");
@@ -1219,7 +1078,7 @@ function lineChart(host, legendEl, series, fmt, zeroBase) {
 }
 
 // ---------- tabs
-const TABS = ["overview", "detail", "subjects"];
+const TABS = ["overview", "detail"];
 let TAB = "overview";
 try { const h = location.hash.slice(1); TAB = TABS.includes(h) ? h : localStorage.getItem("ukhe-pfp-tab") || "overview"; } catch (e) {}
 function setTab(t) {
@@ -1253,7 +1112,6 @@ function render() {
   const U = universe(S.year); lastU = U;
   renderGroupChips(U); renderStatus(U);
   if (TAB === "detail") renderDetail(U);
-  else if (TAB === "subjects") renderSubjectsTab(U);
   else { renderMetricPills(); renderTiles(U); renderSplit(U); renderStrip(U); renderTrend(); renderInvest(U); renderLeague(U); }
   if (document.getElementById("customBox").open) renderPicker();
 }

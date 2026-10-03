@@ -7,22 +7,18 @@ Dashboard showing where each £1 of income goes across UK HE providers, benchmar
 Built from public HESA open data (CC BY 4.0). Not an official University of Reading publication.
 
 ## Getting the raw data
-The raw HESA files (~5GB) are not in the repo. Download them from hesa.ac.uk into `data/raw/`:
-- Finance tables: `https://www.hesa.ac.uk/data-and-analysis/finances/table-N` for N = 1, 5, 6, 7, 8, 9, 12, 14 (save as `hesa-fin-table-N.csv`, or unzip `table-N.zip` into `hesa-fin-table-N/`)
-- Students: `https://www.hesa.ac.uk/data-and-analysis/students/table-49.zip`, unzipped into `hesa-stu-table-49/`
+The raw HESA files (~1GB) are not in the repo. Download them from hesa.ac.uk into `data/raw/`:
+- Finance tables: `https://www.hesa.ac.uk/data-and-analysis/finances/table-N` for N = 1, 6, 7, 8, 9, 14 (save as `hesa-fin-table-N.csv`, or unzip `table-N.zip` into `hesa-fin-table-N/`)
 
 ## Rebuild
 
 ```bash
-python3 scripts/extract_students.py  # only when Table 49 changes (~5GB raw) -> data/students_cah1.csv
 python3 scripts/build_data.py   # data/raw/*.csv -> data/dashboard_data.json
 python3 scripts/build_html.py   # -> docs/index.html (GitHub Pages) and dist/dashboard.html (Claude artifact)
 ```
 
 ## Files
-- `data/raw/` – HESA Finance open data (Tables 1, 5, 6, 7, 8, 9, 12, 14), CC BY 4.0, downloaded 2026-10-03 (last updated May-26).
-- `data/raw/hesa-stu-table-49/` – HESA Student Table 49 (enrolments by provider and CAH subject), downloaded 2026-10-03.
-- `data/students_cah1.csv` – extracted student headcounts by provider, CAH level 1 and mode.
+- `data/raw/` – HESA Finance open data (Tables 1, 6, 7, 8, 9, 14), CC BY 4.0, downloaded 2026-10-03 (last updated May-26).
 - `data/mission_groups.csv` – mission group membership (edit to change groups or the "Reading comparators" peer set).
 - `scripts/build_data.py` – cleans and joins the HESA tables.
 - `src/dashboard.template.html` – the dashboard (vanilla JS + SVG, no dependencies).
@@ -41,4 +37,5 @@ python3 scripts/build_html.py   # -> docs/index.html (GitHub Pages) and dist/das
 ## Tabs
 1. **Overview** – the five headings per £1 of income, with all peer-group, year and filter options.
 2. **Institution detail** – each heading broken into Table 8 activity lines and cost types; research cost recovery; residences and catering net of income (Table 7); whole-institution staff ratios.
-3. **Subjects** – nine broad subject areas (cost centres matched to CAH level 1). Every measure is per £1 of estimated department income: teaching income (fees + teaching grant, shared by student FTE) plus research income (actual by cost centre, plus QR shared by research income). Direct costs = departmental spend + a share of research grant spend. Measures: academic staff cost, all direct costs, professional staff, operating, depreciation, contribution to central costs, research share of income.
+
+Subject-level analysis was trialled and removed: HESA doesn't publish income by subject, so per-subject efficiency relied on modelled income and was judged too uncertain to share.
