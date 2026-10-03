@@ -2,14 +2,21 @@
 
 Dashboard showing where each £1 of income goes across UK HE providers, benchmarked against the University of Reading.
 
-Live page: https://claude.ai/artifact/HVwyJW2dW8aXpQFKkWZLC8 (private until shared)
+**Live dashboard:** https://charlton-perez.github.io/ukhe-finance-dashboard/
+
+Built from public HESA open data (CC BY 4.0). Not an official University of Reading publication.
+
+## Getting the raw data
+The raw HESA files (~5GB) are not in the repo. Download them from hesa.ac.uk into `data/raw/`:
+- Finance tables: `https://www.hesa.ac.uk/data-and-analysis/finances/table-N` for N = 1, 5, 6, 7, 8, 9, 12, 14 (save as `hesa-fin-table-N.csv`, or unzip `table-N.zip` into `hesa-fin-table-N/`)
+- Students: `https://www.hesa.ac.uk/data-and-analysis/students/table-49.zip`, unzipped into `hesa-stu-table-49/`
 
 ## Rebuild
 
 ```bash
 python3 scripts/extract_students.py  # only when Table 49 changes (~5GB raw) -> data/students_cah1.csv
 python3 scripts/build_data.py   # data/raw/*.csv -> data/dashboard_data.json
-python3 scripts/build_html.py   # src/dashboard.template.html + data -> dist/dashboard.html
+python3 scripts/build_html.py   # -> docs/index.html (GitHub Pages) and dist/dashboard.html (Claude artifact)
 ```
 
 ## Files
