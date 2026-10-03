@@ -361,7 +361,7 @@ dl.defs dd { margin: 0; color: var(--ink-2); }
       <dt>Averages</dt><dd>Provider average gives each provider equal weight. Pooled £ adds up money across the group, so large providers dominate. The benchmark is always excluded from group and sector averages; medians appear on the distribution chart.</dd>
       <dt>Mission groups</dt><dd>Memberships as at 2026, applied to every year. "Reading comparators" is a starting peer set of research-intensive universities outside the Russell Group; edit <span class="num">data/mission_groups.csv</span> to change it.</dd>
       <dt>Coverage</dt><dd>Providers that joined later or haven't yet reported a year are missing from it; some sub-lines (e.g. research by funder, residences vs catering) aren't reported by every provider. Small and specialist providers are excluded by default through the minimum income filter.</dd>
-      <dt>Institution detail tab</dt><dd>Breaks each Overview heading into HESA Table 8 activity lines and types of cost (staff, operating, depreciation, interest). Research cost recovery compares research grant income (Table 1) with research grant spend. Residences and catering are shown net of their income (Table 7). Gaps are differences in pence per £1 of income, so providers of different sizes compare fairly. Providers that don't report a breakdown are left out of that line's average.</dd>
+      <dt>Institution detail tab</dt><dd>Breaks each Overview heading into HESA Table 8 activity lines and types of cost (staff, operating, depreciation, interest). Research cost recovery compares research grant income (Table 1) with research grant spend. Residences and catering are shown net of their income (Table 7). Gaps are differences in pence per £1 of income, so providers of different sizes compare fairly. Ratio lines (e.g. professional staff cost per £1 of academic staff cost) use peer and sector medians, because a few specialist providers with almost no academic staff produce extreme ratios that would distort an average. Providers that don't report a breakdown are left out of that line's average.</dd>
       <dt>Source</dt><dd>HESA Higher Education Provider Data: Finance, Tables 1, 6, 7, 8, 9 and 14 (2015/16 to 2024/25, last updated May 2026). Licensed under CC BY 4.0. All money is in £ thousands at source.</dd>
     </dl>
   </section>
@@ -973,7 +973,9 @@ function rowStat(row, U, peers, yi) {
   const den = row.den || ((o) => o.inc);
   const val = (o) => { const n = row.f(o), d = den(o); return { n, d, r: finite(n) && d > 0 ? n / d : NaN }; };
   const collect = (list) => list.map((x) => val(FIN[yi].get(x.id))).filter((x) => finite(x.r));
-  const avg = (L) => (!L.length ? NaN : S.method === "pooled" ? L.reduce((a, x) => a + x.n, 0) / L.reduce((a, x) => a + x.d, 0) : L.reduce((a, x) => a + x.r, 0) / L.length);
+  // ratio lines (row.den) use the median: one provider with a near-zero denominator can otherwise swamp a mean
+  const avg = (L) => (!L.length ? NaN : S.method === "pooled" ? L.reduce((a, x) => a + x.n, 0) / L.reduce((a, x) => a + x.d, 0)
+    : row.den ? median(L.map((x) => x.r)) : L.reduce((a, x) => a + x.r, 0) / L.length);
   const b = val(bo), P = collect(peers.list), Sx = collect(U.sector);
   const pAvg = avg(P), sAvg = avg(Sx), gapP = b.r - pAvg;
   return { b, pAvg, sAvg, gapP, rank: finite(b.r) ? P.filter((x) => x.r > b.r).length + 1 : NaN, of: P.length + 1, peerRs: P.map((x) => x.r) };
@@ -997,7 +999,7 @@ function renderDetail(U) {
       if (row.gap && finite(st.gapP)) gaps.push({ label: row.gapLabel || row.label, st, head: h });
       const gcls = !finite(st.gapP) || Math.abs(st.gapP) < 0.0005 ? "" : st.gapP > 0 ? "gap-more" : "gap-less";
       const cls = row.lvl === 0 ? "head" : row.lvl === 2 ? "l2" : "l1";
-      const ratioUnit = row.den ? ` <span class="tag">(ratio)</span>` : "";
+      const ratioUnit = row.den ? ` <span class="tag">(ratio${S.method === "pooled" ? "" : "; peer and sector figures are medians"})</span>` : "";
       body += `<tr class="${cls}"><td>${esc(row.label)}${ratioUnit}</td><td class="num">${row.den ? "–" : money(st.b.n)}</td><td class="num">${pfmt(st.b.r)}</td><td class="num">${pfmt(st.pAvg)}</td><td class="num">${pfmt(st.sAvg)}</td>` +
         `<td class="num ${gcls}">${signedP(st.gapP, 2)}</td><td class="num rk">${finite(st.rank) ? `${ord(st.rank)} of ${st.of}` : "–"}</td><td class="rng">${rangeSvg(st.peerRs, st.b.r, row.label, pfmt)}</td></tr>`;
     }
@@ -1071,10 +1073,10 @@ function renderDetailTrend() {
   }
   sel.innerHTML = html + "</optgroup>";
   const L = lines.find((l) => l.id === S.detLine);
-  const series = [{ label: shortName(S.bench), color: "--accent", w: 2.5, pts: [] }, { label: "", color: "--group", w: 2, pts: [] }, { label: "Sector average", color: "--sector", w: 2, dash: "5 4", pts: [] }];
+  const series = [{ label: shortName(S.bench), color: "--accent", w: 2.5, pts: [] }, { label: "", color: "--group", w: 2, pts: [] }, { label: L.row.den && S.method !== "pooled" ? "Sector median" : "Sector average", color: "--sector", w: 2, dash: "5 4", pts: [] }];
   YEARS.forEach((y, yj) => {
     const Uj = universe(yj), Pj = peerSet(Uj);
-    series[1].label = Pj.label + " average";
+    series[1].label = Pj.label + (L.row.den && S.method !== "pooled" ? " median" : " average");
     if (!FIN[yj] || !FIN[yj].get(S.bench)) { series.forEach((s) => s.pts.push(NaN)); return; }
     const st = rowStat(L.row, Uj, Pj, yj);
     series[0].pts.push(st.b.r); series[1].pts.push(st.pAvg); series[2].pts.push(st.sAvg);
