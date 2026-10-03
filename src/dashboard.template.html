@@ -325,7 +325,7 @@ dl.defs dd { margin: 0; color: var(--ink-2); }
       <div class="sec-head"><div>
         <div class="eyebrow">Subjects · academic departments only · <span id="subjEyebrow"></span></div>
         <h2 id="h-subjx">How efficient is each subject area?</h2>
-        <p>Departmental spend set against the size of each subject (student FTE) and the research income it brings in. Each row shows every peer as a dot, the sector median as a tick, and <span class="js-bench bench">Reading</span> as the large dot.</p>
+        <p>Direct costs per £1 of each department's income (teaching and research), so research-heavy departments aren't penalised for their research budgets. Each row shows every peer as a dot, the peer median as a solid tick, the sector median as a dashed tick, and <span class="js-bench bench">Reading</span> as the large dot.</p>
       </div></div>
       <div class="toolbar">
         <label class="field"><span>Measure</span><select id="fSubjMetric"></select></label>
@@ -368,7 +368,7 @@ dl.defs dd { margin: 0; color: var(--ink-2); }
       <dt>Mission groups</dt><dd>Memberships as at 2026, applied to every year. "Reading comparators" is a starting peer set of research-intensive universities outside the Russell Group; edit <span class="num">data/mission_groups.csv</span> to change it.</dd>
       <dt>Coverage</dt><dd>From 2018/19 some English providers didn't have to report the subject (cost centre) breakdown, and providers that joined later or haven't yet reported a year are missing from it. Small and specialist providers are excluded by default through the minimum income filter.</dd>
       <dt>Institution detail tab</dt><dd>Breaks each Overview heading into HESA Table 8 activity lines and types of cost (staff, operating, depreciation, interest). Research cost recovery compares research grant income (Table 1) with research grant spend. Residences and catering are shown net of their income (Table 7). Gaps are differences in pence per £1 of income, so providers of different sizes compare fairly. Providers that don't report a breakdown are left out of that line's average.</dd>
-      <dt>Subjects tab</dt><dd>Academic department spend and research income by HESA cost centre (Tables 8 and 5), set against student enrolments by subject (Student Table 49, full-time plus half of part-time, all levels). Cost centres and CAH subjects are matched into nine broad areas: medicine, health and psychology (101–107 / CAH 01, 02, 04); biosciences, agriculture, vet and sport (108–110, 112 / 03, 05, 06); physical and environmental sciences and maths (111, 113, 114, 122, 124 / 07, 09, 26); engineering and computing (115–121 / 10, 11); architecture and built environment (123 / 13); social sciences and law (127–132 / 15, 16); business and management (133–134 / 17); education (135–136 / 22, 23); arts, humanities and languages (125–126, 137–145 / 19, 20, 24, 25). Providers code staff and spend to cost centres in different ways, so treat single-subject outliers with care. Subject comparisons use medians.</dd>
+      <dt>Subjects tab</dt><dd>Measures each subject's direct costs per £1 of its own income, so departments with large research budgets aren't penalised. <b>Department income</b> (estimated) = tuition fees plus teaching grant (OfS teaching grant and DfE teacher training funding in England), shared out by the subject's share of student FTE (Student Table 49, full-time plus half of part-time), plus research grants and contracts income for the subject's cost centres (Finance Table 5), plus QR (Research England research grants) shared by research grant income. Scotland, Wales and Northern Ireland don't split their funding council grant, so it is shared half by student FTE and half by research income. <b>Direct costs</b> = academic department spend for the subject's cost centres (Table 8) plus a share of research grant spend in proportion to research grant income. Central costs aren't allocated, so 1 − direct costs per £1 is the subject's contribution to central costs and surplus. Cost centres and CAH subjects are matched into nine broad areas: medicine, health and psychology (101–107 / CAH 01, 02, 04); biosciences, agriculture, vet and sport (108–110, 112 / 03, 05, 06); physical and environmental sciences and maths (111, 113, 114, 122, 124 / 07, 09, 26); engineering and computing (115–121 / 10, 11); architecture and built environment (123 / 13); social sciences and law (127–132 / 15, 16); business and management (133–134 / 17); education (135–136 / 22, 23); arts, humanities and languages (125–126, 137–145 / 19, 20, 24, 25). Providers assign costs to cost centres differently, so treat single-subject outliers with care. Comparisons use medians.</dd>
       <dt>Source</dt><dd>HESA Higher Education Provider Data: Finance, Tables 1, 5, 6, 7, 8, 9 and 14 (2015/16 to 2024/25, last updated May 2026), and HESA Student Table 49 (January 2026). Licensed under CC BY 4.0. All money is in £ thousands at source.</dd>
     </dl>
   </section>
@@ -430,7 +430,7 @@ const PILL_METRICS = ["acaddel", "support", "mgmt", "estates", "otherops", "surp
 const S = {
   year: YEARS.length - 1, bench: READING, pension: false, surplus: "all", nation: "all", minInc: 20000,
   method: "mean", groups: new Set(["Reading comparators (editable)"]), detail: false, metric: "acaddel",
-  inv3: true, subjMetric: "spend", subjArea: null, detLine: null, custom: new Set(), sort: { k: "acaddel", dir: -1 }, search: "",
+  inv3: true, subjMetric: "acstaff", subjArea: null, detLine: null, custom: new Set(), sort: { k: "acaddel", dir: -1 }, search: "",
 };
 try {
   const saved = JSON.parse(localStorage.getItem("ukhe-pfp") || "null");
@@ -1080,22 +1080,22 @@ function renderGapChart(gaps, peerLabel) {
 }
 
 // ---------- subjects tab
-const kfmt = (v) => (finite(v) ? "£" + (v / 1000).toFixed(Math.abs(v % 1000) < 1e-6 ? 0 : 1) + "k" : "–");
+const p0 = (v) => pence(v, 0);
 const SUBJ_METRICS = {
-  spend: { label: "Total departmental spend per student FTE", f: (x) => (x.total * 1000) / x.fte, fmt: kfmt },
-  acstaff: { label: "Academic staff cost per student FTE", f: (x) => (x.ac_staff * 1000) / x.fte, fmt: kfmt },
-  othstaff: { label: "Professional & support staff cost per student FTE", f: (x) => (x.oth_staff * 1000) / x.fte, fmt: kfmt },
-  opex: { label: "Operating costs per student FTE", f: (x) => (x.opex * 1000) / x.fte, fmt: kfmt },
-  dep: { label: "Depreciation per student FTE", f: (x) => (x.dep * 1000) / x.fte, fmt: kfmt },
-  acshare: { label: "Academic staff share of departmental spend", f: (x) => x.ac_staff / x.total, fmt: (v) => pct(v, 0) },
-  res: { label: "Research income per £1 of departmental spend", f: (x) => x.res_inc / x.total, fmt: (v) => pence(v, 0) },
+  acstaff: { label: "Academic staff cost per £1 of department income", f: (x) => x.c_as / x.inc, fmt: p0 },
+  direct: { label: "All direct costs per £1 of department income", f: (x) => x.c_total / x.inc, fmt: p0 },
+  othstaff: { label: "Professional & support staff cost per £1 of department income", f: (x) => x.c_os / x.inc, fmt: p0 },
+  opex: { label: "Operating costs per £1 of department income", f: (x) => x.c_op / x.inc, fmt: p0 },
+  dep: { label: "Depreciation per £1 of department income", f: (x) => x.c_dp / x.inc, fmt: p0 },
+  contrib: { label: "Contribution to central costs per £1 of department income", f: (x) => 1 - x.c_total / x.inc, fmt: p0 },
+  resshare: { label: "Research share of department income", f: (x) => x.inc_resx / x.inc, fmt: (v) => pct(v, 0) },
 };
 function areaRec(yi, id, a) {
   const o = SUBJ[yi] && SUBJ[yi][id] && SUBJ[yi][id][a];
   if (!o) return null;
-  const fte = nz(o.ft) + 0.5 * nz(o.pt);
-  if (fte < 50 || !(o.total > 100)) return null;
-  return { ...o, fte };
+  const inc = nz(o.inc_teach) + nz(o.inc_resx);
+  if (inc < 250 || !(o.c_total > 100)) return null;
+  return { ...o, inc };
 }
 function areaVals(yi, ids, a, m) { const out = []; for (const id of ids) { const r = areaRec(yi, id, a); if (r) { const v = SUBJ_METRICS[m].f(r); if (finite(v)) out.push({ id, name: shortName(id), v }); } } return out; }
 function renderSubjectsTab(U) {
@@ -1107,7 +1107,7 @@ function renderSubjectsTab(U) {
   const rows = AREAS.map((label, a) => {
     const br = areaRec(yi, S.bench, a);
     return { a, label, br, bv: br ? M.f(br) : NaN, P: areaVals(yi, peerIds, a, m), Sx: areaVals(yi, secIds, a, m) };
-  }).filter((r) => r.br || r.P.length >= 3).sort((x, y) => nz(y.br && y.br.total) - nz(x.br && x.br.total));
+  }).filter((r) => r.br || r.P.length >= 3).sort((x, y) => nz(y.br && y.br.inc) - nz(x.br && x.br.inc));
   if (S.subjArea == null || !rows.some((r) => r.a === S.subjArea)) S.subjArea = (rows.find((r) => r.br) || rows[0] || {}).a;
   document.getElementById("fSubjArea").innerHTML = rows.map((r) => `<option value="${r.a}" ${r.a === S.subjArea ? "selected" : ""}>${esc(r.label)}${r.br ? "" : " (no " + esc(bn) + " data)"}</option>`).join("");
 
@@ -1129,7 +1129,7 @@ function renderSubjectsTab(U) {
     rows.forEach((r, i) => {
       const yc = top + i * rowH + (narrow ? 36 : rowH / 2), sel = r.a === S.subjArea;
       if (sel) g += `<rect x="0" y="${yc - rowH / 2}" width="${W}" height="${rowH}" style="fill:var(--accent-soft);fill-opacity:.6"/>`;
-      const sub = r.br ? `${Math.round(r.br.fte).toLocaleString()} FTE` : "no students/spend";
+      const sub = r.br ? `${money(r.br.inc)} income` : "not reported";
       g += narrow ? `<text class="lbl" x="0" y="${yc - 20}">${esc(r.label)} <tspan class="lbl2">${sub}</tspan></text>`
         : `<text class="lbl" x="${labW - 12}" y="${yc - 2}" text-anchor="end">${esc(r.label)}</text><text class="lbl2" x="${labW - 12}" y="${yc + 13}" text-anchor="end">${esc(bn)}: ${sub}</text>`;
       g += `<line x1="${labW}" x2="${W - padR}" y1="${yc}" y2="${yc}" style="stroke:var(--grid)"/>`;
@@ -1153,15 +1153,16 @@ function renderSubjectsTab(U) {
   const cell = (a, mm, br) => {
     const F = SUBJ_METRICS[mm];
     const b = br ? F.f(br) : NaN, pm = med(yi, peerIds, a, mm), sm = med(yi, secIds, a, mm);
-    const d = finite(b) && finite(pm) && pm !== 0 ? (b / pm - 1) : NaN;
-    const dcls = !finite(d) || Math.abs(d) < 0.02 ? "" : d > 0 ? "gap-more" : "gap-less";
-    return `<td class="num">${F.fmt(b)}</td><td class="num">${F.fmt(pm)}</td><td class="num">${F.fmt(sm)}</td><td class="num ${dcls}">${finite(d) ? (d >= 0 ? "+" : "−") + Math.abs(d * 100).toFixed(0) + "%" : "–"}</td>`;
+    const d = b - pm;
+    const dcls = !finite(d) || Math.abs(d) < 0.005 ? "" : (d > 0) !== (mm === "contrib" || mm === "resshare") ? "gap-more" : "gap-less";
+    const dtxt = !finite(d) ? "–" : mm === "resshare" ? (d >= 0 ? "+" : "−") + Math.abs(d * 100).toFixed(0) + " pts" : signedP(d, 0);
+    return `<td class="num">${F.fmt(b)}</td><td class="num">${F.fmt(pm)}</td><td class="num">${F.fmt(sm)}</td><td class="num ${dcls}">${dtxt}</td>`;
   };
   const grpHead = (lab) => `<th colspan="4" style="text-align:center;border-bottom:1px solid var(--rule)">${lab}</th>`;
   const subHead = `<th>${esc(bn)}</th><th>Peer median</th><th>Sector median</th><th>vs peers</th>`;
   const t = document.getElementById("subjTable");
-  t.innerHTML = `<thead><tr><th rowspan="2">Subject area</th><th rowspan="2">${esc(bn)}<br><span class="tag">student FTE</span></th><th rowspan="2">${esc(bn)}<br><span class="tag">dept spend</span></th>${grpHead("Spend per student FTE")}${grpHead(esc(m === "spend" || m === "res" ? SUBJ_METRICS.acstaff.label : M.label))}${grpHead("Research income per £1 spend")}</tr><tr>${subHead}${subHead}${subHead}</tr></thead><tbody>` +
-    rows.map((r) => `<tr class="${r.a === S.subjArea ? "is-bench" : ""}" data-area="${r.a}" style="cursor:pointer"><td>${esc(r.label)}</td><td class="num">${r.br ? Math.round(r.br.fte).toLocaleString() : "–"}</td><td class="num">${r.br ? money(r.br.total) : "–"}</td>${cell(r.a, "spend", r.br)}${cell(r.a, m === "spend" || m === "res" ? "acstaff" : m, r.br)}${cell(r.a, "res", r.br)}</tr>`).join("") + "</tbody>";
+  t.innerHTML = `<thead><tr><th rowspan="2">Subject area</th><th rowspan="2">${esc(bn)}<br><span class="tag">dept income</span></th><th rowspan="2">${esc(bn)}<br><span class="tag">direct costs</span></th>${grpHead("Academic staff cost per £1 income")}${grpHead(esc(m === "acstaff" || m === "contrib" ? "All direct costs per £1 income" : M.label))}${grpHead("Contribution per £1 income")}</tr><tr>${subHead}${subHead}${subHead}</tr></thead><tbody>` +
+    rows.map((r) => `<tr class="${r.a === S.subjArea ? "is-bench" : ""}" data-area="${r.a}" style="cursor:pointer"><td>${esc(r.label)}</td><td class="num">${r.br ? money(r.br.inc) : "–"}</td><td class="num">${r.br ? money(r.br.c_total) : "–"}</td>${cell(r.a, "acstaff", r.br)}${cell(r.a, m === "acstaff" || m === "contrib" ? "direct" : m, r.br)}${cell(r.a, "contrib", r.br)}</tr>`).join("") + "</tbody>";
   t.querySelectorAll("tr[data-area]").forEach((tr) => (tr.onclick = () => { S.subjArea = +tr.dataset.area; render(); }));
 
   // trend for selected area
@@ -1175,9 +1176,9 @@ function renderSubjectsTab(U) {
     series[1].pts.push(median(areaVals(yj, Pj.list.map((x) => x.id), a, m).map((p) => p.v)));
     series[2].pts.push(median(areaVals(yj, Uj.sector.map((x) => x.id), a, m).map((p) => p.v)));
   });
-  lineChart(document.getElementById("subjTrend"), document.getElementById("subjTrendLegend"), series, M.fmt, m !== "res");
+  lineChart(document.getElementById("subjTrend"), document.getElementById("subjTrendLegend"), series, M.fmt, m !== "contrib");
   const nRep = U.sector.filter((x) => SUBJ[yi] && SUBJ[yi][x.id]).length;
-  document.getElementById("subjNote").textContent = `${nRep} of ${U.sector.length} sector providers report spend by subject for ${YEARS[yi]} (some English providers are exempt). A subject is included for a provider when it has at least 50 student FTE and £100k of departmental spend. Student FTE counts part-time students as 0.5. Departmental spend includes departmental research not funded by grants, so research-heavy subjects naturally show more spend per student.`;
+  document.getElementById("subjNote").textContent = `${nRep} of ${U.sector.length} sector providers report spend by subject for ${YEARS[yi]} (some English providers are exempt). Department income is estimated: tuition fees and teaching grant are shared out by student FTE (part-time counted as 0.5); research grant income is actual by cost centre, with QR shared by research grant income. Direct costs are departmental spend plus the department's share of research grant spend. Central costs (estates, admin, support) are not allocated, so whatever is left is the department's contribution to them. A subject is included when it has at least £250k of income and £100k of direct cost.`;
 }
 document.getElementById("fSubjMetric").onchange = (e) => { S.subjMetric = e.target.value; render(); };
 document.getElementById("fSubjArea").onchange = (e) => { S.subjArea = +e.target.value; render(); };

@@ -151,6 +151,15 @@ fin = fin.join(pd.concat([
     t7[src == "Catering and Conference operations"].groupby(["UKPRN", "Academic year"])["v"].sum().rename("inc_cater"),
 ], axis=1), how="left")
 
+# funding body grant components (England splits teaching and research; other nations report a total)
+FB = {"Funding body grants": "fb_total", "Office for Students teaching grant": "fb_teach",
+      "Department for Education teacher training funding": "fb_tt", "Research England research grants": "fb_qr",
+      "Capital grants recognised in the year": "fb_cap"}
+t7f = read(RAW / "hesa-fin-table-7.csv")
+t7f = t7f[t7f["Category"].str.strip() == "Funding body grants"]
+t7f = t7f.assign(k=t7f["Source of income"].str.strip().map(FB)).dropna(subset=["k"])
+fbg = t7f.pivot_table(index=["UKPRN", "Academic year"], columns="k", values="v", aggfunc="sum")
+
 # ---------------------------------------------------------------- Table 6: non-EU fee income
 fee_rows = []
 for f in sorted(glob.glob(str(RAW / "hesa-fin-table-6" / "*.csv"))):
@@ -228,9 +237,40 @@ sa.index = sa.index.set_levels(sa.index.levels[2].astype(int), level=2)
 fa.index = fa.index.set_levels(fa.index.levels[2].astype(int), level=2)
 area = fa.join(sa, how="outer").reset_index()
 keep = pd.Series([(u, y) in reporters for u, y in zip(area["UKPRN"], area["Academic year"])], index=area.index)
-area = area[keep & area["Academic year"].isin(yi)]
-area = area[(area["total"].fillna(0) > 0) | (area["ft"].fillna(0) + area["pt"].fillna(0) > 0)]
-SUBJ_COLS = SUBJ_FIN + ["ft", "pt"]
+area = area[keep & area["Academic year"].isin(yi)].copy()
+area[["total", "ac_staff", "oth_staff", "opex", "dep", "res_inc", "ft", "pt"]] = \
+    area[["total", "ac_staff", "oth_staff", "opex", "dep", "res_inc", "ft", "pt"]].fillna(0)
+
+# Department income and direct cost model (all £000s), per provider-year-area:
+#   teaching income = (tuition fees + teaching grant) x area share of student FTE
+#   research income = research grants & contracts by cost centre (Table 5) + QR x area share of research grant income
+#   other nations: recurrent funding body grants split half by FTE share, half by research share
+#   direct cost = academic department spend + research grant spend (207) x area share of research grant income
+area["fte"] = area["ft"] + 0.5 * area["pt"]
+g = area.groupby(["UKPRN", "Academic year"])
+area["fte_sh"] = area["fte"] / g["fte"].transform("sum")
+res_tot = g["res_inc"].transform("sum")
+spend_sh = area["total"] / g["total"].transform("sum")
+area["res_sh"] = (area["res_inc"] / res_tot).where(res_tot > 0, spend_sh)
+p = fin.set_index(["UKPRN", "Academic year"]).join(fbg, how="left")
+cols = ["country", "inc_fees", "inc_res", "research", "research_as", "research_os", "research_op", "research_dp",
+        "research_in", "research_rs", "fb_total", "fb_teach", "fb_tt", "fb_qr", "fb_cap"]
+p["country"] = [providers.loc[u, "country"] if u in providers.index else "" for u, _ in p.index]
+area = area.join(p[cols], on=["UKPRN", "Academic year"])
+for c in cols[1:]:
+    area[c] = area[c].fillna(0)
+eng = area["country"] == "England"
+other_fb = (area["fb_total"] - area["fb_cap"]).clip(lower=0)
+area["inc_teach"] = (area["inc_fees"] + area["fb_teach"] + area["fb_tt"]) * area["fte_sh"] + \
+    (~eng) * other_fb * 0.5 * area["fte_sh"]
+area["inc_resx"] = area["res_inc"] + area["fb_qr"] * area["res_sh"] + (~eng) * other_fb * 0.5 * area["res_sh"]
+area["c_as"] = area["ac_staff"] + area["research_as"] * area["res_sh"]
+area["c_os"] = area["oth_staff"] + area["research_os"] * area["res_sh"]
+area["c_op"] = area["opex"] + (area["research_op"] + area["research_in"] + area["research_rs"]) * area["res_sh"]
+area["c_dp"] = area["dep"] + area["research_dp"] * area["res_sh"]
+area["c_total"] = area["total"] + area["research"] * area["res_sh"]
+area = area[(area["c_total"] > 0) | (area["fte"] > 0)]
+SUBJ_COLS = ["inc_teach", "inc_resx", "c_total", "c_as", "c_os", "c_op", "c_dp", "res_inc", "fte"]
 subj_out = [[r["UKPRN"], yi[r["Academic year"]], int(r["area"])] + [j(r[c]) for c in SUBJ_COLS]
             for _, r in area.iterrows()]
 cc_names = [name for name, _, _ in AREAS]

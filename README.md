@@ -41,4 +41,4 @@ python3 scripts/build_html.py   # -> docs/index.html (GitHub Pages) and dist/das
 ## Tabs
 1. **Overview** – the five headings per £1 of income, with all peer-group, year and filter options.
 2. **Institution detail** – each heading broken into Table 8 activity lines and cost types; research cost recovery; residences and catering net of income (Table 7); whole-institution staff ratios.
-3. **Subjects** – nine broad subject areas (cost centres matched to CAH level 1): spend per student FTE, academic staff cost per FTE, other costs per FTE, research income per £1 of departmental spend. FTE = full-time + 0.5 × part-time.
+3. **Subjects** – nine broad subject areas (cost centres matched to CAH level 1). Every measure is per £1 of estimated department income: teaching income (fees + teaching grant, shared by student FTE) plus research income (actual by cost centre, plus QR shared by research income). Direct costs = departmental spend + a share of research grant spend. Measures: academic staff cost, all direct costs, professional staff, operating, depreciation, contribution to central costs, research share of income.
