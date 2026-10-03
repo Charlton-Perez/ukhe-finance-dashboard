@@ -301,7 +301,7 @@ dl.defs dd { margin: 0; color: var(--ink-2); }
       <div class="sec-head"><div>
         <div class="eyebrow">Institution detail · <span id="gapEyebrow"></span></div>
         <h2 id="h-gap">What drives the gap to <span id="gapPeer">peers</span></h2>
-        <p>Each bar is <span class="js-bench">Reading</span>'s spend on one activity minus what it would spend at the peer average per £1 of income. Residences and catering are shown net of the income they earn.</p>
+        <p>Each bar is the difference, in pence per £1 of income, between <span class="js-bench">Reading</span> and the peer average for one activity, so institutions of any size compare fairly. Residences and catering are shown net of the income they earn.</p>
       </div></div>
       <div class="legend" id="gapLegend"></div>
       <div class="chart" id="gapChart"></div>
@@ -367,7 +367,7 @@ dl.defs dd { margin: 0; color: var(--ink-2); }
       <dt>Averages</dt><dd>Provider average gives each provider equal weight. Pooled £ adds up money across the group, so large providers dominate. The benchmark is always excluded from group and sector averages; medians appear on the distribution chart.</dd>
       <dt>Mission groups</dt><dd>Memberships as at 2026, applied to every year. "Reading comparators" is a starting peer set of research-intensive universities outside the Russell Group; edit <span class="num">data/mission_groups.csv</span> to change it.</dd>
       <dt>Coverage</dt><dd>From 2018/19 some English providers didn't have to report the subject (cost centre) breakdown, and providers that joined later or haven't yet reported a year are missing from it. Small and specialist providers are excluded by default through the minimum income filter.</dd>
-      <dt>Institution detail tab</dt><dd>Breaks each Overview heading into HESA Table 8 activity lines and types of cost (staff, operating, depreciation, interest). Research cost recovery compares research grant income (Table 1) with research grant spend. Residences and catering are shown net of their income (Table 7). Gaps in £m apply the per-£1 difference to the benchmark's own income. Providers that don't report a breakdown are left out of that line's average.</dd>
+      <dt>Institution detail tab</dt><dd>Breaks each Overview heading into HESA Table 8 activity lines and types of cost (staff, operating, depreciation, interest). Research cost recovery compares research grant income (Table 1) with research grant spend. Residences and catering are shown net of their income (Table 7). Gaps are differences in pence per £1 of income, so providers of different sizes compare fairly. Providers that don't report a breakdown are left out of that line's average.</dd>
       <dt>Subjects tab</dt><dd>Academic department spend and research income by HESA cost centre (Tables 8 and 5), set against student enrolments by subject (Student Table 49, full-time plus half of part-time, all levels). Cost centres and CAH subjects are matched into nine broad areas: medicine, health and psychology (101–107 / CAH 01, 02, 04); biosciences, agriculture, vet and sport (108–110, 112 / 03, 05, 06); physical and environmental sciences and maths (111, 113, 114, 122, 124 / 07, 09, 26); engineering and computing (115–121 / 10, 11); architecture and built environment (123 / 13); social sciences and law (127–132 / 15, 16); business and management (133–134 / 17); education (135–136 / 22, 23); arts, humanities and languages (125–126, 137–145 / 19, 20, 24, 25). Providers code staff and spend to cost centres in different ways, so treat single-subject outliers with care. Subject comparisons use medians.</dd>
       <dt>Source</dt><dd>HESA Higher Education Provider Data: Finance, Tables 1, 5, 6, 7, 8, 9 and 14 (2015/16 to 2024/25, last updated May 2026), and HESA Student Table 49 (January 2026). Licensed under CC BY 4.0. All money is in £ thousands at source.</dd>
     </dl>
@@ -887,7 +887,6 @@ const peerSet = (U) => {
   const G = primaryGroup(U);
   return G && G.list.length ? G : { label: S.nation === "all" ? "UK sector" : `${S.nation} sector`, list: U.sector };
 };
-const gapMoney = (m) => (finite(m) ? (m >= 0 ? "+" : "−") + "£" + Math.abs(m / 1000).toFixed(1) + "m" : "–");
 function quant(sorted, p) { if (!sorted.length) return NaN; const i = (sorted.length - 1) * p, lo = Math.floor(i), hi = Math.ceil(i); return sorted[lo] + (sorted[hi] - sorted[lo]) * (i - lo); }
 function rangeSvg(peerVals, bench, label, fmt) {
   const a = peerVals.filter(finite).sort((x, y) => x - y);
@@ -986,7 +985,7 @@ function rowStat(row, U, peers, yi) {
   const avg = (L) => (!L.length ? NaN : S.method === "pooled" ? L.reduce((a, x) => a + x.n, 0) / L.reduce((a, x) => a + x.d, 0) : L.reduce((a, x) => a + x.r, 0) / L.length);
   const b = val(bo), P = collect(peers.list), Sx = collect(U.sector);
   const pAvg = avg(P), sAvg = avg(Sx), gapP = b.r - pAvg;
-  return { b, pAvg, sAvg, gapP, gapM: row.den ? NaN : gapP * bo.inc, rank: finite(b.r) ? P.filter((x) => x.r > b.r).length + 1 : NaN, of: P.length + 1, peerRs: P.map((x) => x.r) };
+  return { b, pAvg, sAvg, gapP, rank: finite(b.r) ? P.filter((x) => x.r > b.r).length + 1 : NaN, of: P.length + 1, peerRs: P.map((x) => x.r) };
 }
 function renderDetail(U) {
   const yi = S.year, b = U.bench, peers = peerSet(U);
@@ -996,25 +995,25 @@ function renderDetail(U) {
   if (!b) { cards.innerHTML = ""; gapHost.innerHTML = `<p class="note">${esc(fullName(S.bench))} has no finance return for ${YEARS[yi]}.</p>`; return; }
   const gaps = [];
   const bn = esc(shortName(S.bench));
-  const thead = `<thead><tr><th>Line</th><th>${bn}<br><span class="tag">£</span></th><th>${bn}<br><span class="tag">per £1</span></th><th>${esc(peers.label)}<br><span class="tag">average</span></th><th>Sector<br><span class="tag">average</span></th><th>Gap to peers<br><span class="tag">per £1</span></th><th>Gap to peers<br><span class="tag">£m</span></th><th>Rank in peers<br><span class="tag">highest = 1st</span></th><th>Peer spread</th></tr></thead>`;
+  const thead = `<thead><tr><th>Line</th><th>${bn}<br><span class="tag">£</span></th><th>${bn}<br><span class="tag">per £1</span></th><th>${esc(peers.label)}<br><span class="tag">average</span></th><th>Sector<br><span class="tag">average</span></th><th>Gap to peers<br><span class="tag">per £1</span></th><th>Rank in peers<br><span class="tag">highest = 1st</span></th><th>Peer spread</th></tr></thead>`;
   const pfmt = (v) => pence(v, 2);
   const html = detailSpec().map((h) => {
     let body = "", headStat = null;
     for (const row of h.rows) {
-      if (row.sub) { body += `<tr class="sub"><td colspan="9">${esc(row.sub)}</td></tr>`; continue; }
+      if (row.sub) { body += `<tr class="sub"><td colspan="8">${esc(row.sub)}</td></tr>`; continue; }
       const st = rowStat(row, U, peers, yi);
       if (row.lvl === 0 && !headStat) headStat = st;
-      if (row.gap && finite(st.gapM)) gaps.push({ label: row.gapLabel || row.label, st, head: h });
+      if (row.gap && finite(st.gapP)) gaps.push({ label: row.gapLabel || row.label, st, head: h });
       const gcls = !finite(st.gapP) || Math.abs(st.gapP) < 0.0005 ? "" : st.gapP > 0 ? "gap-more" : "gap-less";
       const cls = row.lvl === 0 ? "head" : row.lvl === 2 ? "l2" : "l1";
       const ratioUnit = row.den ? ` <span class="tag">(ratio)</span>` : "";
       body += `<tr class="${cls}"><td>${esc(row.label)}${ratioUnit}</td><td class="num">${row.den ? "–" : money(st.b.n)}</td><td class="num">${pfmt(st.b.r)}</td><td class="num">${pfmt(st.pAvg)}</td><td class="num">${pfmt(st.sAvg)}</td>` +
-        `<td class="num ${gcls}">${signedP(st.gapP, 2)}</td><td class="num ${gcls}">${gapMoney(st.gapM)}</td><td class="num rk">${finite(st.rank) ? `${ord(st.rank)} of ${st.of}` : "–"}</td><td class="rng">${rangeSvg(st.peerRs, st.b.r, row.label, pfmt)}</td></tr>`;
+        `<td class="num ${gcls}">${signedP(st.gapP, 2)}</td><td class="num rk">${finite(st.rank) ? `${ord(st.rank)} of ${st.of}` : "–"}</td><td class="rng">${rangeSvg(st.peerRs, st.b.r, row.label, pfmt)}</td></tr>`;
     }
     const hs = headStat;
     return `<section class="card" aria-label="${esc(h.label)}">
       <div class="det-head"><h2><i class="sw" style="background:var(${h.c});width:12px;height:12px;margin-right:8px;vertical-align:1px"></i>${esc(h.label)}</h2>
-      ${hs ? `<div class="figs"><span>${bn} <b>${pence(hs.b.r)}</b></span><span>${esc(peers.label)} <b>${pence(hs.pAvg)}</b></span><span>Sector <b>${pence(hs.sAvg)}</b></span><span>Gap <b>${gapMoney(hs.gapM)}</b></span></div>` : ""}</div>
+      ${hs ? `<div class="figs"><span>${bn} <b>${pence(hs.b.r)}</b></span><span>${esc(peers.label)} <b>${pence(hs.pAvg)}</b></span><span>Sector <b>${pence(hs.sAvg)}</b></span><span>Gap to peers <b>${signedP(hs.gapP)}</b></span></div>` : ""}</div>
       <div class="tbl-wrap" style="max-height:none"><table class="det">${thead}<tbody>${body}</tbody></table></div>
     </section>`;
   }).join("");
@@ -1057,7 +1056,7 @@ function renderGapChart(gaps, peerLabel) {
   const host = document.getElementById("gapChart");
   const W = Math.max(320, host.clientWidth || 900), narrow = W < 700;
   const labW = narrow ? 0 : 300, rowH = narrow ? 40 : 26, top = 24;
-  const maxAbs = Math.max(500, ...gaps.map((g) => Math.abs(g.st.gapM)));
+  const maxAbs = Math.max(0.005, ...gaps.map((g) => Math.abs(g.st.gapP)));
   const plotL = labW + 56, plotW = W - plotL - 60;
   const X = (v) => plotL + plotW / 2 + (v / maxAbs) * (plotW / 2);
   const step = niceStep(maxAbs / (narrow ? 2 : 4));
@@ -1065,16 +1064,15 @@ function renderGapChart(gaps, peerLabel) {
   for (const gp of gaps) { if (gp.head !== last) { items.push({ sep: gp.head }); last = gp.head; } items.push(gp); }
   const H = top + items.reduce((a, it) => a + (it.sep ? 26 : rowH), 0) + 8;
   let g = "", y = top;
-  for (let t = -Math.floor(maxAbs / step) * step; t <= maxAbs + 1e-9; t += step) g += `<line x1="${X(t)}" x2="${X(t)}" y1="${top - 4}" y2="${H - 4}" style="stroke:${Math.abs(t) < 1e-9 ? "var(--ink-3)" : "var(--grid)"}"/><text class="ax" x="${X(t)}" y="${top - 10}" text-anchor="middle">${t === 0 ? "£0" : (t > 0 ? "+" : "−") + "£" + Math.abs(t / 1000).toFixed(Math.abs(t) < 1000 ? 1 : 0) + "m"}</text>`;
-  let total = 0;
+  for (let t = -Math.floor(maxAbs / step) * step; t <= maxAbs + 1e-9; t += step) g += `<line x1="${X(t)}" x2="${X(t)}" y1="${top - 4}" y2="${H - 4}" style="stroke:${Math.abs(t) < 1e-9 ? "var(--ink-3)" : "var(--grid)"}"/><text class="ax" x="${X(t)}" y="${top - 10}" text-anchor="middle">${Math.abs(t) < 1e-9 ? "0p" : signedP(t, step < 0.01 ? 1 : 0)}</text>`;
   for (const it of items) {
     if (it.sep) { g += `<text class="lbl" x="0" y="${y + 18}" style="font-weight:600"><tspan style="fill:var(${it.sep.c})">■</tspan> ${esc(it.sep.label)}</text>`; y += 26; continue; }
-    const v = it.st.gapM; total += v;
+    const v = it.st.gapP;
     const x0 = X(0), x1 = X(v), bh = 14, by = y + (narrow ? 20 : (rowH - bh) / 2);
     g += narrow ? `<text class="lbl2" x="0" y="${by - 4}">${esc(it.label)}</text>` : `<text class="lbl2" x="${labW}" y="${by + bh - 3}" text-anchor="end">${esc(it.label.length > 48 ? it.label.slice(0, 46) + "…" : it.label)}</text>`;
-    const tipH = `<b>${esc(it.label)}</b><br>${esc(bn)}: <span class='num'>${pence(it.st.b.r, 2)}</span> · ${esc(peerLabel)}: <span class='num'>${pence(it.st.pAvg, 2)}</span><br>Gap: <span class='num'>${signedP(it.st.gapP, 2)} · ${gapMoney(v)}</span>`;
+    const tipH = `<b>${esc(it.label)}</b><br>${esc(bn)}: <span class='num'>${pence(it.st.b.r, 2)}</span> · ${esc(peerLabel)}: <span class='num'>${pence(it.st.pAvg, 2)}</span><br>Gap: <span class='num'>${signedP(v, 2)} per £1 of income</span>`;
     g += `<rect x="${Math.min(x0, x1)}" y="${by}" width="${Math.max(1, Math.abs(x1 - x0))}" height="${bh}" rx="2" style="fill:var(${v >= 0 ? "--critical" : "--group"})" data-tip="${tipH}"/>`;
-    g += `<text class="ax" x="${v >= 0 ? x1 + 5 : x1 - 5}" y="${by + bh - 3}" text-anchor="${v >= 0 ? "start" : "end"}">${gapMoney(v)}</text>`;
+    g += `<text class="ax" x="${v >= 0 ? x1 + 5 : x1 - 5}" y="${by + bh - 3}" text-anchor="${v >= 0 ? "start" : "end"}">${signedP(v, 2)}</text>`;
     y += rowH;
   }
   host.innerHTML = svgNS(W, H, g);
