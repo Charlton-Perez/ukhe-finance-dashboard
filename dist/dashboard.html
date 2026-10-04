@@ -173,7 +173,7 @@ dl.defs dd { margin: 0; color: var(--ink-2); }
   <header class="top">
     <div class="eyebrow">HESA Finance open data · UK higher education providers</div>
     <h1>Where each £1 of income goes</h1>
-    <p class="lede">Expenditure per £1 of total income, split into academic delivery, support, management, estates and other operations, plus capital investment. <span class="bench" id="benchNameLede">University of Reading</span> is the benchmark on every view, against the sector and the mission groups you select.</p>
+    <p class="lede">Expenditure per £1 of total income across the eight HESA spending activities, from academic departments and research to central administration and premises, plus capital investment. <span class="bench" id="benchNameLede">University of Reading</span> is the benchmark on every view, against the sector and the mission groups you select.</p>
   </header>
 
   <div class="filters" role="region" aria-label="Filters">
@@ -197,8 +197,14 @@ dl.defs dd { margin: 0; color: var(--ink-2); }
         <option value="all">UK</option><option>England</option><option>Scotland</option><option>Wales</option><option>Northern Ireland</option>
       </select></label>
       <label class="field"><span>Min. income</span><select id="fMin">
-        <option value="0">Any size</option><option value="10000">£10m+</option><option value="20000" selected>£20m+</option><option value="50000">£50m+</option><option value="100000">£100m+</option><option value="250000">£250m+</option>
+        <option value="0">Any size</option><option value="10000">£10m+</option><option value="20000">£20m+</option><option value="50000">£50m+</option><option value="100000" selected>£100m+</option><option value="250000">£250m+</option>
       </select></label>
+      <div class="field"><span>Provider type</span>
+        <div class="seg" id="fType">
+          <button type="button" data-v="pub" aria-pressed="true" title="Providers whose funding council grants are at least 1% of income">Publicly funded</button>
+          <button type="button" data-v="all" aria-pressed="false">All providers</button>
+        </div>
+      </div>
       <div class="field"><span>Averages</span>
         <div class="seg" id="fMethod">
           <button type="button" data-v="mean" aria-pressed="true" title="Each provider counts equally">Provider average</button>
@@ -237,10 +243,6 @@ dl.defs dd { margin: 0; color: var(--ink-2); }
         <div class="eyebrow">Spend per £1 of income</div>
         <h2 id="h-split">The £1 split</h2>
         <p>Each bar is £1 of income. What isn't spent is the surplus; a bar running past the £1 line is a deficit.</p>
-      </div>
-      <div class="seg" id="fDetail">
-        <button type="button" data-v="0" aria-pressed="true">5 headings</button>
-        <button type="button" data-v="1" aria-pressed="false">8 HESA activities</button>
       </div>
     </div>
     <div class="legend" id="splitLegend"></div>
@@ -341,18 +343,15 @@ dl.defs dd { margin: 0; color: var(--ink-2); }
     <div class="sec-head"><div><div class="eyebrow">Method</div><h2 id="h-notes">Definitions and caveats</h2></div></div>
     <dl class="defs">
       <dt>Income</dt><dd>Total income from HESA Table 1: tuition fees, funding body grants, research grants, other income, investment income, donations and endowments.</dd>
-      <dt>Academic delivery</dt><dd>Academic departments (teaching and departmental research, HESA cost centres 101–145) plus research grants and contracts (207).</dd>
-      <dt>Support services</dt><dd>Academic services (201: library, central IT and computing, learning resources) plus general education expenditure (203: bursaries, scholarships, examinations) and staff and student facilities (204).</dd>
-      <dt>Management and administration</dt><dd>Central administration and services (202).</dd>
-      <dt>Estates</dt><dd>Premises (205): running costs, repairs and maintenance, depreciation and finance costs on the estate.</dd>
-      <dt>Residences and other</dt><dd>Residences and catering operations (206) and other expenditure (208, excluding the pension cost adjustment).</dd>
+      <dt>Spending activities</dt><dd>The eight activities follow HESA Table 8. <b>Academic departments</b>: teaching and departmental research (cost centres 101–145). <b>Research grants &amp; contracts</b>: direct spend on externally funded projects (207). <b>Academic services</b>: library, central IT and computing, learning resources (201). <b>Student support &amp; facilities</b>: bursaries, scholarships, exams and other general education (203) plus staff and student facilities such as careers, wellbeing, sport and the students' union (204). <b>Central administration</b>: central administration and services (202). <b>Premises</b>: estate running costs, repairs and maintenance, depreciation and estate finance costs (205). <b>Residences &amp; catering</b> (206). <b>Other expenditure</b> (208, excluding the pension cost adjustment).</dd>
       <dt>Pension adjustments</dt><dd>The non-cash pension cost adjustment reported in Table 8 (USS, LGPS and similar provision movements). These swing year to year: Reading's was +£72.6m in 2021/22 and −£102.7m in 2023/24. They are excluded by default; switch to Included to match the audited accounts.</dd>
       <dt>Surplus or deficit</dt><dd>Income minus expenditure (operating result before gains, losses, tax and joint ventures). The surplus and deficit filter uses this figure, so it follows the pension setting.</dd>
       <dt>Capital investment</dt><dd>HESA Table 9 total actual capital spend, split into buildings and equipment plus intangible assets. Capital spend is lumpy, so the 3-year average divides three years of spend by three years of income.</dd>
       <dt>Averages</dt><dd>Provider average gives each provider equal weight. Pooled £ adds up money across the group, so large providers dominate. The benchmark is always excluded from group and sector averages; medians appear on the distribution chart.</dd>
       <dt>Mission groups</dt><dd>Memberships as at 2026, applied to every year. "Reading comparators" is a starting peer set of research-intensive universities outside the Russell Group; edit <span class="num">data/mission_groups.csv</span> to change it.</dd>
-      <dt>Coverage</dt><dd>Providers that joined later or haven't yet reported a year are missing from it; some sub-lines (e.g. research by funder, residences vs catering) aren't reported by every provider. Small and specialist providers are excluded by default through the minimum income filter.</dd>
-      <dt>Institution detail tab</dt><dd>Breaks each Overview heading into HESA Table 8 activity lines and types of cost (staff, operating, depreciation, interest). Research cost recovery compares research grant income (Table 1) with research grant spend. Residences and catering are shown net of their income (Table 7). Gaps are differences in pence per £1 of income, so providers of different sizes compare fairly. Ratio lines (e.g. professional staff cost per £1 of academic staff cost) use peer and sector medians, because a few specialist providers with almost no academic staff produce extreme ratios that would distort an average. Providers that don't report a breakdown are left out of that line's average.</dd>
+      <dt>Provider filters</dt><dd>By default the comparison includes providers with income of £100m or more that are publicly funded (funding council grants of at least 1% of income). Small, specialist, private and pathway providers often have very different cost structures. For example, some private providers spend more than 60p per £1 on central administration, which skews averages. Lower the minimum income or choose "All providers" to include them. The benchmark is always shown.</dd>
+      <dt>Coverage</dt><dd>Providers that joined later or haven't yet reported a year are missing from it; some sub-lines (e.g. research by funder, residences vs catering) aren't reported by every provider. </dd>
+      <dt>Institution detail tab</dt><dd>Breaks each of the eight activities into HESA Table 8 sub-lines and types of cost (staff, operating, depreciation, interest). Research cost recovery compares research grant income (Table 1) with research grant spend. Residences and catering are shown net of their income (Table 7). Gaps are differences in pence per £1 of income, so providers of different sizes compare fairly. Ratio lines (e.g. professional staff cost per £1 of academic staff cost) use peer and sector medians, because a few specialist providers with almost no academic staff produce extreme ratios that would distort an average. Providers that don't report a breakdown are left out of that line's average.</dd>
       <dt>Source</dt><dd>HESA Higher Education Provider Data: Finance, Tables 1, 6, 7, 8, 9 and 14 (2015/16 to 2024/25, last updated May 2026). Licensed under CC BY 4.0. All money is in £ thousands at source.</dd>
     </dl>
   </section>
@@ -390,28 +389,21 @@ const DETAIL = [
   { k: "resid", label: "Residences & catering", c: "--c7" },
   { k: "other", label: "Other expenditure", c: "--c8" },
 ];
-const FAMS = [
-  { k: "acaddel", label: "Academic delivery", c: "--c1", parts: ["acad", "research"] },
-  { k: "support", label: "Support services", c: "--c2", parts: ["acserv", "student"] },
-  { k: "mgmt", label: "Management & admin", c: "--c3", parts: ["mgmt"] },
-  { k: "estates", label: "Estates", c: "--c4", parts: ["estates"] },
-  { k: "otherops", label: "Residences & other", c: "--c5", parts: ["resid", "other"] },
-];
 const PENSION = { k: "pension", label: "Pension adjustment", c: "--sector", hatch: true };
 const METRICS = {
-  acaddel: "Academic delivery", acad: "Academic departments", research: "Research grants & contracts",
-  support: "Support services", acserv: "Academic services", student: "Student support & facilities",
-  mgmt: "Management & admin", estates: "Estates (premises)", otherops: "Residences & other",
+  acad: "Academic departments", research: "Research grants & contracts", acserv: "Academic services",
+  student: "Student support & facilities", mgmt: "Central administration", estates: "Premises",
+  resid: "Residences & catering", other: "Other expenditure",
   surplus: "Surplus / deficit", capex: "Capital investment", capex_build: "Buildings investment", capex_equip: "Equipment & digital investment",
   fees: "Tuition fee income",
 };
-const PILL_METRICS = ["acaddel", "support", "mgmt", "estates", "otherops", "surplus", "capex", "acad", "research", "acserv", "student"];
+const PILL_METRICS = ["acad", "research", "acserv", "student", "mgmt", "estates", "resid", "other", "surplus", "capex"];
 
 // ---------- state
 const S = {
-  year: YEARS.length - 1, bench: READING, pension: false, surplus: "all", nation: "all", minInc: 20000,
-  method: "mean", groups: new Set(["Reading comparators (editable)"]), detail: false, metric: "acaddel",
-  inv3: true, detLine: null, target: "sector", custom: new Set(), sort: { k: "acaddel", dir: -1 }, search: "",
+  year: YEARS.length - 1, bench: READING, pension: false, surplus: "all", nation: "all", minInc: 100000, pubOnly: true,
+  method: "mean", groups: new Set(["Reading comparators (editable)"]), metric: "acad",
+  inv3: true, detLine: null, target: "sector", custom: new Set(), sort: { k: "acad", dir: -1 }, search: "",
 };
 try {
   const saved = JSON.parse(localStorage.getItem("ukhe-pfp") || "null");
@@ -436,7 +428,6 @@ function derive(o, yi) {
   v.exp = DETAIL.reduce((a, c) => a + v[c.k], 0) + v.pension;
   v.inc = o.inc;
   v.surplus = v.inc - v.exp;
-  v.acaddel = v.acad + v.research; v.support = v.acserv + v.student; v.otherops = v.resid + v.other;
   v.fees = o.inc_fees;
   // capital: optionally 3-year pooled
   let cb = 0, ce = 0, ct = 0, ci = 0, n = 0;
@@ -448,7 +439,7 @@ function derive(o, yi) {
   }
   const capInc = n ? ci : null;
   const r = {};
-  for (const k of ["acad", "research", "acserv", "student", "mgmt", "estates", "resid", "other", "pension", "surplus", "acaddel", "support", "otherops", "fees"]) r[k] = v[k] == null ? NaN : v[k] / v.inc;
+  for (const k of ["acad", "research", "acserv", "student", "mgmt", "estates", "resid", "other", "pension", "surplus", "fees"]) r[k] = v[k] == null ? NaN : v[k] / v.inc;
   r.capex = capInc ? ct / capInc : NaN; r.capex_build = capInc ? cb / capInc : NaN; r.capex_equip = capInc ? ce / capInc : NaN;
   v.capex = ct; v.capex_build = cb; v.capex_equip = ce; v.capInc = capInc;
   return { v, r };
@@ -464,6 +455,7 @@ function universe(yi) {
     if (id === S.bench) { res.bench = rec; continue; }
     if (S.nation !== "all" && rec.country !== S.nation) continue;
     if (!(d.v.inc >= S.minInc)) continue;
+    if (S.pubOnly && !((o.inc_fbg || 0) >= 0.01 * o.inc)) continue;
     if (S.surplus === "surplus" && d.v.surplus < 0) continue;
     if (S.surplus === "deficit" && d.v.surplus >= 0) continue;
     res.sector.push(rec);
@@ -556,7 +548,7 @@ fBench.onchange = () => { S.bench = fBench.value; render(); };
 segInit("fPension", (v) => (S.pension = v === "in"));
 segInit("fSurplus", (v) => (S.surplus = v));
 segInit("fMethod", (v) => (S.method = v));
-segInit("fDetail", (v) => (S.detail = v === "1"));
+segInit("fType", (v) => (S.pubOnly = v === "pub"));
 segInit("fInv3", (v) => (S.inv3 = v === "3"));
 segInit("fTarget", (v) => (S.target = v));
 document.getElementById("fNation").onchange = (e) => { S.nation = e.target.value; render(); };
@@ -597,7 +589,7 @@ function renderTiles(U) {
   const el = document.getElementById("tiles");
   if (!b) { el.innerHTML = `<p class="note">${esc(fullName(S.bench))} has no finance return for ${YEARS[S.year]}. Choose another year.</p>`; return; }
   const items = [
-    ...FAMS.map((f) => ({ k: f.k, label: f.label, c: f.c })),
+    ...DETAIL.map((f) => ({ k: f.k, label: f.label, c: f.c })),
     ...(S.pension ? [{ k: "pension", label: "Pension adjustment", c: "--sector" }] : []),
     { k: "surplus", label: "Surplus / deficit", c: null },
     { k: "capex", label: S.inv3 ? "Capital investment (3-yr)" : "Capital investment", c: null },
@@ -617,7 +609,7 @@ function renderTiles(U) {
 }
 
 // ---------- render: £1 split
-function splitCats() { const base = S.detail ? DETAIL : FAMS; return S.pension ? [...base, PENSION] : base; }
+function splitCats() { return S.pension ? [...DETAIL, PENSION] : DETAIL; }
 function renderSplit(U) {
   const rows = compRows(U).filter((r) => r.list.length);
   const cats = splitCats();
@@ -673,7 +665,7 @@ function renderSplit(U) {
   bindTips(host);
 
   // companion table
-  const allCats = [...(S.detail ? DETAIL : FAMS), ...(S.pension ? [PENSION] : [])];
+  const allCats = splitCats();
   const t = document.getElementById("splitTable");
   t.innerHTML = `<thead><tr><th>Pence per £1</th>${allCats.map((c) => `<th>${esc(c.label)}</th>`).join("")}<th>Surplus</th><th>Providers</th></tr></thead><tbody>` +
     vals.map((row) => `<tr class="${row.r.kind === "bench" ? "is-bench" : row.r.kind === "sector" ? "avg" : ""}"><td>${esc(row.r.label)}</td>${row.segs.map((s) => `<td class="num">${pence(s.v)}</td>`).join("")}<td class="num" style="color:${1 - row.tot >= 0 ? "var(--good)" : "var(--critical)"}">${signedP(1 - row.tot)}</td><td class="num">${row.r.list.length}</td></tr>`).join("") + "</tbody>";
@@ -832,7 +824,7 @@ let lastU = null;
 function renderLeague(U) {
   const cols = [
     { k: "inc", label: "Income", f: (x) => money(x.v.inc), v: (x) => x.v.inc },
-    ...FAMS.map((f) => ({ k: f.k, label: f.label, f: (x) => pence(x.r[f.k]), v: (x) => x.r[f.k] })),
+    ...DETAIL.map((f) => ({ k: f.k, label: f.label, f: (x) => pence(x.r[f.k]), v: (x) => x.r[f.k] })),
     ...(S.pension ? [{ k: "pension", label: "Pension adj.", f: (x) => pence(x.r.pension), v: (x) => x.r.pension }] : []),
     { k: "surplus", label: "Surplus", f: (x) => `<span style="color:${x.r.surplus >= 0 ? "var(--good)" : "var(--critical)"}">${signedP(x.r.surplus)}</span>`, v: (x) => x.r.surplus },
     { k: "capex", label: S.inv3 ? "Capex (3-yr)" : "Capex", f: (x) => pence(x.r.capex), v: (x) => x.r.capex },
@@ -914,46 +906,57 @@ function detailSpec() {
       { label: "Professional & support staff cost per £1 of academic staff cost", f: (o) => nat(o, ALL_HEADS, "os"), den: (o) => nat(o, ALL_HEADS, "as"), lvl: 1 },
       { label: "All staff costs per £1 of income", f: (o) => nat(o, ALL_HEADS, "as") + nat(o, ALL_HEADS, "os"), lvl: 1 },
     ] },
-    { key: "acaddel", label: "Academic delivery", c: "--c1", rows: [
-      { label: "Academic delivery total", f: (o) => nz(o.acad) + nz(o.research), lvl: 0 },
-      { label: "Academic departments (teaching & departmental research)", f: (o) => nz(o.acad), lvl: 1, gap: true },
-      ...natRows(["acad"], ["as", "os", "op", "dp"]),
-      { label: "Research grants & contracts (funded projects)", f: (o) => nz(o.research), lvl: 1 },
-      ...natRows(["research"], ["as", "os", "op", "dp"]),
+    { key: "acad", label: "Academic departments", c: "--c1", rows: [
+      { label: "Academic departments (teaching & departmental research)", f: (o) => nz(o.acad), lvl: 0, gap: true },
+      { sub: "By type of cost" },
+      ...natRows(["acad"], ["as", "os", "op", "dp"]).map((r) => ({ ...r, lvl: 1 })),
+    ] },
+    { key: "research", label: "Research grants & contracts", c: "--c2", rows: [
+      { label: "Research grants & contracts (funded projects)", f: (o) => nz(o.research), lvl: 0 },
+      { sub: "By type of cost" },
+      ...natRows(["research"], ["as", "os", "op", "dp"]).map((r) => ({ ...r, lvl: 1 })),
       { sub: "Research efficiency" },
       { label: "Research grant income per £1 of direct research spend (covers overheads too)", f: (o) => nz(o.inc_res), den: (o) => nz(o.research), lvl: 1 },
       { label: "Research spend less research grant income (negative = contribution to overheads)", f: (o) => nz(o.research) - nz(o.inc_res), lvl: 1, gap: true, gapLabel: "Research: spend less grant income" },
     ] },
-    { key: "support", label: "Support services", c: "--c2", rows: [
-      { label: "Support services total", f: (o) => nz(o.acserv) + nz(o.gen_ed) + nz(o.facilities), lvl: 0 },
-      { label: "Academic services (library, IT, learning resources)", f: (o) => nz(o.acserv), lvl: 1, gap: true },
-      { label: "Student services & facilities (careers, wellbeing, sport, SU)", f: (o) => nz(o.facilities), lvl: 1, gap: true },
+    { key: "acserv", label: "Academic services", c: "--c3", rows: [
+      { label: "Academic services (library, central IT, learning resources)", f: (o) => nz(o.acserv), lvl: 0, gap: true },
+      { sub: "By type of cost" },
+      ...natRows(["acserv"]).map((r) => ({ ...r, lvl: 1 })),
+    ] },
+    { key: "student", label: "Student support & facilities", c: "--c4", rows: [
+      { label: "Student support & facilities total", f: (o) => nz(o.gen_ed) + nz(o.facilities), lvl: 0 },
+      { label: "Staff & student facilities (careers, wellbeing, sport, SU)", f: (o) => nz(o.facilities), lvl: 1, gap: true, gapLabel: "Staff & student facilities" },
       { label: "Bursaries & scholarships (passed to students)", f: (o) => orNaN(o, ["ge_nat", "ge_prov", "ge_oth"], () => nz(o.ge_nat) + nz(o.ge_prov)), lvl: 1, gap: true },
       { label: "Other general education (exams, fellowships, etc.)", f: (o) => orNaN(o, ["ge_nat", "ge_prov", "ge_oth"], () => nz(o.ge_oth)), lvl: 1, gap: true },
       { sub: "By type of cost" },
-      ...natRows(["acserv", "gen_ed", "facilities"]).map((r) => ({ ...r, lvl: 1 })),
+      ...natRows(["gen_ed", "facilities"]).map((r) => ({ ...r, lvl: 1 })),
     ] },
-    { key: "mgmt", label: "Management & admin", c: "--c3", rows: [
+    { key: "mgmt", label: "Central administration", c: "--c5", rows: [
       { label: "Central administration & services", f: (o) => nz(o.admin), lvl: 0, gap: true },
       { sub: "By type of cost" },
       ...natRows(["admin"]).map((r) => ({ ...r, lvl: 1 })),
     ] },
-    { key: "estates", label: "Estates", c: "--c4", rows: [
+    { key: "estates", label: "Premises", c: "--c6", rows: [
       { label: "Premises total", f: (o) => nz(o.premises), lvl: 0 },
       { label: "Repairs & maintenance", f: (o) => orNaN(o, ["pr_rm", "pr_oth"], () => nz(o.pr_rm)), lvl: 1, gap: true },
       { label: "Other premises costs (utilities, rates, cleaning, security, depreciation, interest)", f: (o) => orNaN(o, ["pr_rm", "pr_oth"], () => nz(o.pr_oth)), lvl: 1, gap: true, gapLabel: "Other premises running costs" },
       { sub: "By type of cost" },
       ...natRows(["premises"]).map((r) => ({ ...r, lvl: 1 })),
     ] },
-    { key: "otherops", label: "Residences, catering & other", c: "--c5", rows: [
-      { label: "Residences & catering: net cost (spend less income)", f: (o) => nz(o.resid) - nz(o.inc_resid) - nz(o.inc_cater), lvl: 0 },
-      { label: "Residences: net cost", f: (o) => orNaN(o, ["rc_res", "rc_cat"], () => nz(o.rc_res) - nz(o.inc_resid)), lvl: 1, gap: true },
+    { key: "resid", label: "Residences & catering", c: "--c7", rows: [
+      { label: "Residences & catering spend", f: (o) => nz(o.resid), lvl: 0 },
+      { label: "Residences: net cost (spend less income)", f: (o) => orNaN(o, ["rc_res", "rc_cat"], () => nz(o.rc_res) - nz(o.inc_resid)), lvl: 1, gap: true, gapLabel: "Residences: net cost" },
       { label: "Spend", f: (o) => orNaN(o, ["rc_res", "rc_cat"], () => nz(o.rc_res)), lvl: 2 },
       { label: "Income", f: (o) => nz(o.inc_resid), lvl: 2 },
-      { label: "Catering & conferences: net cost", f: (o) => orNaN(o, ["rc_res", "rc_cat"], () => nz(o.rc_cat) - nz(o.inc_cater)), lvl: 1, gap: true },
+      { label: "Catering & conferences: net cost (spend less income)", f: (o) => orNaN(o, ["rc_res", "rc_cat"], () => nz(o.rc_cat) - nz(o.inc_cater)), lvl: 1, gap: true, gapLabel: "Catering & conferences: net cost" },
       { label: "Spend", f: (o) => orNaN(o, ["rc_res", "rc_cat"], () => nz(o.rc_cat)), lvl: 2 },
       { label: "Income", f: (o) => nz(o.inc_cater), lvl: 2 },
-      { label: "Other expenditure", f: (o) => nz(o.other_ex_pen), lvl: 1, gap: true },
+    ] },
+    { key: "other", label: "Other expenditure", c: "--c8", rows: [
+      { label: "Other expenditure (excluding pension adjustment)", f: (o) => nz(o.other_ex_pen), lvl: 0, gap: true, gapLabel: "Other expenditure" },
+      { sub: "By type of cost" },
+      ...natRows(["other"]).map((r) => ({ ...r, lvl: 1 })),
     ] },
   ];
   if (S.pension) spec.push({ key: "pension", label: "Pension adjustment", c: "--sector", rows: [{ label: "Pension cost adjustment (non-cash)", f: (o) => nz(o.pension_adj), lvl: 0, gap: true }] });
@@ -1014,6 +1017,7 @@ function surplusSet(yi, U) {
     if (id === S.bench) continue;
     if (S.nation !== "all" && (P[id] ? P[id][1] : "") !== S.nation) continue;
     if (!(o.inc >= S.minInc)) continue;
+    if (S.pubOnly && !((o.inc_fbg || 0) >= 0.01 * o.inc)) continue;
     const d = derive(o, yi);
     if (d.v.surplus >= 0) out.push({ id, name: shortName(id), ...d });
   }
@@ -1163,7 +1167,7 @@ function renderStatus(U) {
   const gs = selGroups();
   const G = primaryGroup(U);
   document.getElementById("statusLine").innerHTML =
-    `${YEARS[S.year]} · ${U.sector.length} sector providers` + (G ? ` · ${G.list.length} in ${esc(G.label)}` : " · no group selected") +
+    `${YEARS[S.year]} · ${U.sector.length} sector providers (${S.pubOnly ? "publicly funded, " : ""}${S.minInc ? "income £" + S.minInc / 1000 + "m+" : "any size"})` + (G ? ` · ${G.list.length} in ${esc(G.label)}` : " · no group selected") +
     ` · pension adjustments ${S.pension ? "included" : "excluded"}` + (S.surplus !== "all" ? ` · ${S.surplus} providers only (${esc(shortName(S.bench))} always shown)` : "") +
     ` · benchmark excluded from averages`;
   document.querySelectorAll(".js-bench").forEach((el) => (el.textContent = shortName(S.bench)));
