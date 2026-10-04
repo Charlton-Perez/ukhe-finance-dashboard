@@ -37,6 +37,9 @@ python3 scripts/build_html.py   # -> docs/index.html (GitHub Pages) and dist/das
 | Pension adjustment | Pension cost adjustment (in 208); excluded by default |
 | Capital investment | Table 9: buildings vs equipment & intangible assets |
 
+## Optional "Cost type" view
+A switch in the filters regroups spend by type of cost, which holds up better when universities code costs differently: academic staff (all activities), academic running costs, professional & support staff (excluding estates and accommodation staff), support running costs, estate (premises plus residences and catering, net of their income), student financial support, and other & one-off (other expenditure plus restructuring). Lines are per £1 of core income (total income less accommodation and catering income) and add up to £1 with the surplus.
+
 ## Default comparison set
 Providers with income ≥ £100m that are publicly funded (funding council grants ≥ 1% of income), which leaves about 112 providers in 2024/25. Both filters can be changed on the page.
 
