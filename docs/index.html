@@ -360,7 +360,7 @@ dl.defs dd { margin: 0; color: var(--ink-2); }
       <dt>Mission groups</dt><dd>Memberships as at 2026, applied to every year. "Reading comparators" is a starting peer set of research-intensive universities outside the Russell Group; edit <span class="num">data/mission_groups.csv</span> to change it.</dd>
       <dt>Provider filters</dt><dd>By default the comparison includes providers with income of £100m or more that are publicly funded (funding council grants of at least 1% of income). Small, specialist, private and pathway providers often have very different cost structures. For example, some private providers spend more than 60p per £1 on central administration, which skews averages. Lower the minimum income or choose "All providers" to include them. The benchmark is always shown.</dd>
       <dt>Coverage</dt><dd>Providers that joined later or haven't yet reported a year are missing from it; some sub-lines (e.g. research by funder, residences vs catering) aren't reported by every provider. </dd>
-      <dt>Institution detail tab</dt><dd>Breaks each of the eight activities into HESA Table 8 sub-lines and types of cost (staff, operating, depreciation, interest). Research cost recovery compares research grant income (Table 1) with research grant spend. Residences and catering are shown net of their income (Table 7). Gaps are differences in pence per £1 of income, so providers of different sizes compare fairly. Ratio lines (e.g. professional staff cost per £1 of academic staff cost) use peer and sector medians, because a few specialist providers with almost no academic staff produce extreme ratios that would distort an average. Providers that don't report a breakdown are left out of that line's average.</dd>
+      <dt>Institution detail tab</dt><dd>Breaks each of the eight activities into HESA Table 8 sub-lines and types of cost (staff, operating, depreciation, interest). Research cost recovery compares research grant income (Table 1) with research grant spend. Residences and catering are shown net of their income (Table 7). Gaps are differences in pence per £1 of income, so providers of different sizes compare fairly. The support envelope adds central administration, academic services, staff and student facilities and professional staff in academic departments, so it isn't affected by whether a university runs these services centrally or in its schools (bursaries are left out because they are passed to students). Ratio lines (e.g. professional staff cost per £1 of academic staff cost) use peer and sector medians, because a few specialist providers with almost no academic staff produce extreme ratios that would distort an average. Providers that don't report a breakdown are left out of that line's average.</dd>
       <dt>Source</dt><dd>HESA Higher Education Provider Data: Finance, Tables 1, 6, 7, 8, 9 and 14 (2015/16 to 2024/25, last updated May 2026). Licensed under CC BY 4.0. All money is in £ thousands at source.</dd>
     </dl>
   </section>
@@ -914,6 +914,10 @@ function detailSpec() {
       { sub: "Efficiency ratios" },
       { label: "Professional & support staff cost per £1 of academic staff cost", f: (o) => nat(o, ALL_HEADS, "os"), den: (o) => nat(o, ALL_HEADS, "as"), lvl: 1 },
       { label: "All staff costs per £1 of income", f: (o) => nat(o, ALL_HEADS, "as") + nat(o, ALL_HEADS, "os"), lvl: 1 },
+      { sub: "Professional services totals (less affected by how costs are coded)" },
+      { label: "Professional & support staff, all activities", f: (o) => nat(o, ALL_HEADS, "os"), lvl: 1, target: true },
+      { label: "Support envelope: central admin + academic services + staff & student facilities + departmental professional staff", f: (o) => nz(o.admin) + nz(o.acserv) + nz(o.facilities) + nz(o.acad_os), lvl: 1, target: true, gapLabel: "Support envelope (admin, academic services, facilities, dept professional staff)" },
+      { label: "Academic staff in central services (central admin + academic services)", f: (o) => nz(o.admin_as) + nz(o.acserv_as), lvl: 1, target: true },
     ] },
     { key: "acad", label: "Academic departments", c: "--c1", rows: [
       { label: "Academic departments (teaching & departmental research)", f: (o) => nz(o.acad), lvl: 0, gap: true },
@@ -1048,9 +1052,9 @@ function renderTargets(U) {
   document.getElementById("targetSummary").innerHTML = `Target set: <b>${T.list.length} ${esc(T.label)}</b>. Their average operating result is <b>${signedP(tres)}</b> per £1 of income; ${esc(bn)}'s is <b>${signedP(bres)}</b>, a gap of <b>${signedP(bres - tres)}</b> (≈ ${(bres - tres >= 0 ? "+" : "−")}£${Math.abs(((bres - tres) * bo.inc) / 1000).toFixed(1)}m).`;
   let body = "";
   for (const h of detailSpec()) {
-    if (h.key === "whole") continue;
     for (const row of h.rows) {
-      if (row.sub || row.den || !(row.lvl === 0 || row.gap)) continue;
+      if (row.sub || row.den) continue;
+      if (h.key === "whole" ? !row.target : !(row.lvl === 0 || row.gap)) continue;
       const st = rowStat(row, fake, T, yi);
       const chg = st.pAvg - st.b.r, m = chg * bo.inc;
       const isHead = row.lvl === 0;
