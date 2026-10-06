@@ -7,6 +7,8 @@ Inputs: HESA Finance open data (CC-BY-4.0) in data/raw/
   Table 8  - expenditure by activity and HESA cost centre (incl. pension cost adjustment)
   Table 9  - capital expenditure (estates vs equipment/digital investment)
   Table 14 - key financial indicators (context)
+  Table 12 - staff FTE, salaries and staff earning over £100k (staffing tab)
+  Staff Table 7 - academic staff by contract level, function, terms and mode (staffing tab)
 Plus data/mission_groups.csv (editable membership list).
 
 All money values are £000s. Output: data/dashboard_data.json
@@ -182,6 +184,41 @@ def j(x, dp=0):
 fin_out = [[r["UKPRN"], yi[r["Academic year"]]] +
            [j(r[c], 1 if c.startswith("kfi") else 0) for c in FIN_COLS] for _, r in fin.iterrows()]
 
+# ---------------------------------------------------------------- staffing (Finance Table 12 + Staff Table 7)
+t12 = read(RAW / "hesa-fin-table-12.csv")
+T12 = {"Salaries and wages academic staff": "sal_ac", "Salaries and wages non-academic staff": "sal_na",
+       "Average academic staff numbers (FTE)": "fte_ac", "Average non-academic staff numbers (FTE)": "fte_na",
+       "FTE (England only)": "hi_fte", "Headcount (Northern Ireland and Wales only)": "hi_hc"}
+t12 = t12[t12["Staff costs"].isin(T12)].assign(k=lambda x: x["Staff costs"].map(T12))
+staff = t12.pivot_table(index=["UKPRN", "Academic year"], columns="k", values="v", aggfunc="first")
+T7 = {("Contract levels", "Professor"): "st_prof", ("Contract levels", "Other senior academic"): "st_sen",
+      ("Contract levels", "Other contract level"): "st_oth",
+      ("Academic employment function", "Both teaching and research"): "st_tr",
+      ("Academic employment function", "Research only"): "st_ro", ("Academic employment function", "Teaching only"): "st_to",
+      ("Terms of employment", "Fixed-term"): "st_fixed", ("Sex", "Female"): "st_fem",
+      ("Total academic staff", "Total academic staff"): "st_tot"}
+t7rows = []
+for f in sorted(glob.glob(str(RAW / "hesa-staff-table-7" / "*.csv"))):
+    lines = Path(f).read_text(encoding="utf-8-sig").splitlines()
+    hdr = next(i for i, l in enumerate(lines[:40]) if l.startswith("UKPRN"))
+    t = pd.read_csv(f, skiprows=hdr, dtype=str, encoding="utf-8-sig")
+    t = t[(t["Country of HE provider"] == "All") & (t["Region of HE provider"] == "All")
+          & (t["Activity standard occupational classification"] == "All")]
+    t["v"] = pd.to_numeric(t["Number"].str.replace(",", ""), errors="coerce")
+    a = t[t["Mode of employment"] == "All"]
+    a = a.assign(k=[T7.get((m, c)) for m, c in zip(a["Category marker"], a["Category"])]).dropna(subset=["k"])
+    m = t[(t["Mode of employment"] == "Part-time") & (t["Category"] == "Total academic staff")].assign(k="st_pt")
+    t7rows.append(pd.concat([a, m]).rename(columns={"Academic Year": "Academic year"}))
+t7 = pd.concat(t7rows).pivot_table(index=["UKPRN", "Academic year"], columns="k", values="v", aggfunc="first")
+staff = staff.join(t7, how="outer").reset_index()
+staff = staff[staff["Academic year"].isin(yi) & staff["UKPRN"].isin(set(fin["UKPRN"]))]
+STAFF_COLS = ["st_tot", "st_prof", "st_sen", "st_oth", "st_tr", "st_ro", "st_to", "st_fixed", "st_fem", "st_pt",
+              "sal_ac", "sal_na", "fte_ac", "fte_na", "hi_fte", "hi_hc"]
+for c in STAFF_COLS:
+    if c not in staff:
+        staff[c] = None
+staff_out = [[r["UKPRN"], yi[r["Academic year"]]] + [j(r[c]) for c in STAFF_COLS] for _, r in staff.iterrows()]
+
 mg = pd.read_csv(ROOT / "data" / "mission_groups.csv", dtype=str)
 groups = {g: sorted(set(x["ukprn"])) for g, x in mg.groupby("group", sort=False)}
 
@@ -194,6 +231,8 @@ out = {
     "groups": groups,
     "fin_cols": FIN_COLS,
     "fin": fin_out,
+    "staff_cols": STAFF_COLS,
+    "staff": staff_out,
 }
 OUT.write_text(json.dumps(out, separators=(",", ":")))
 print(f"providers={len(out['providers'])} fin_rows={len(fin_out)} "

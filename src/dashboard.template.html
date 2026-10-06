@@ -232,6 +232,7 @@ dl.defs dd { margin: 0; color: var(--ink-2); }
   <nav class="tabs" role="tablist" aria-label="Views">
     <button type="button" role="tab" id="tab-overview" data-tab="overview" aria-selected="true" aria-controls="pane-overview">Overview</button>
     <button type="button" role="tab" id="tab-detail" data-tab="detail" aria-selected="false" aria-controls="pane-detail">Institution detail</button>
+    <button type="button" role="tab" id="tab-staffing" data-tab="staffing" aria-selected="false" aria-controls="pane-staffing">Staffing</button>
   </nav>
 
   <div class="pane" id="pane-overview" role="tabpanel" aria-labelledby="tab-overview">
@@ -345,6 +346,28 @@ dl.defs dd { margin: 0; color: var(--ink-2); }
     <div id="detailCards" class="detail-cards"></div>
   </div>
 
+  <div class="pane" id="pane-staffing" role="tabpanel" aria-labelledby="tab-staffing" hidden>
+    <section class="card" aria-labelledby="h-staff">
+      <div class="sec-head"><div>
+        <div class="eyebrow">Staffing · <span id="staffEyebrow"></span></div>
+        <h2 id="h-staff"><span class="js-bench bench">Reading</span>'s workforce against <span id="staffPeer">peers</span></h2>
+        <p>Grades, size, pay and contracts for academic staff, plus overall staff FTE and pay. All peer and sector figures are medians. Click a row to chart it below.</p>
+      </div></div>
+      <div class="tbl-wrap" style="max-height:none"><table id="staffTable" class="det"></table></div>
+      <div id="staffKey"></div>
+    </section>
+    <section class="card" aria-labelledby="h-staffd">
+      <div class="sec-head">
+        <div><div class="eyebrow">Distribution and trend</div><h2 id="h-staffd"><span id="staffMetricTitle"></span></h2></div>
+        <label class="field"><span>Measure</span><select id="fStaffMetric"></select></label>
+      </div>
+      <div class="chart" id="staffStrip"></div>
+      <div class="legend" id="staffTrendLegend"></div>
+      <div class="chart" id="staffTrend"></div>
+      <p class="note" id="staffNote"></p>
+    </section>
+  </div>
+
   <section class="card" aria-labelledby="h-notes">
     <div class="sec-head"><div><div class="eyebrow">Method</div><h2 id="h-notes">Definitions and caveats</h2></div></div>
     <dl class="defs">
@@ -359,7 +382,8 @@ dl.defs dd { margin: 0; color: var(--ink-2); }
       <dt>Provider filters</dt><dd>By default the comparison includes providers with income of £100m or more that are publicly funded (funding council grants of at least 1% of income). Small, specialist, private and pathway providers often have very different cost structures. For example, some private providers spend more than 60p per £1 on central administration, which skews averages. Lower the minimum income or choose "All providers" to include them. The benchmark is always shown.</dd>
       <dt>Coverage</dt><dd>Providers that joined later or haven't yet reported a year are missing from it; some sub-lines (e.g. research by funder, residences vs catering) aren't reported by every provider. </dd>
       <dt>Institution detail tab</dt><dd>Breaks each of the eight activities into HESA Table 8 sub-lines and types of cost (staff, operating, depreciation, interest). Research cost recovery compares research grant income (Table 1) with research grant spend. Residences and catering are shown net of their income (Table 7). Gaps are differences in pence per £1 of income, so providers of different sizes compare fairly. The support envelope adds central administration, academic services, staff and student facilities and professional staff in academic departments, so it isn't affected by whether a university runs these services centrally or in its schools (bursaries are left out because they are passed to students). Ratio lines (e.g. professional staff cost per £1 of academic staff cost) use peer and sector medians, because a few specialist providers with almost no academic staff produce extreme ratios that would distort an average. Providers that don't report a breakdown are left out of that line's average.</dd>
-      <dt>Source</dt><dd>HESA Higher Education Provider Data: Finance, Tables 1, 6, 7, 8, 9 and 14 (2015/16 to 2024/25, last updated May 2026). Licensed under CC BY 4.0. All money is in £ thousands at source.</dd>
+      <dt>Staffing tab</dt><dd>Academic staff grades, roles and contracts from HESA Staff Table 7 (headcount, excluding atypical staff): "professor" and "other senior academic" are HESA contract levels. Staff FTE, salaries and the number of staff earning over £100,000 come from HESA Finance Table 12 (2017/18 onwards). Salaries exclude employer pension and National Insurance. Medians are used throughout.</dd>
+      <dt>Source</dt><dd>HESA Higher Education Provider Data: Finance, Tables 1, 6, 7, 8, 9, 12 and 14 (2015/16 to 2024/25, last updated May 2026), and HESA Staff Table 7 (February 2026). Licensed under CC BY 4.0. All money is in £ thousands at source.</dd>
     </dl>
   </section>
 </div>
@@ -376,6 +400,8 @@ const READING = "10007802";
 // ---------- indexes
 const FIN = {};
 for (const r of D.fin) { const o = { id: r[0] }; FC.forEach((c, i) => (o[c] = r[2 + i])); (FIN[r[1]] ||= new Map()).set(r[0], o); }
+const STAFF = {};
+for (const r of D.staff || []) { const o = {}; D.staff_cols.forEach((c, i) => (o[c] = r[2 + i])); (STAFF[r[1]] ||= new Map()).set(r[0], o); }
 const CUSTOM = "Custom peer set";
 const shortName = (id) => (P[id] ? P[id][0] : id)
   .replace(/^The /, "").replace(/^University of /, "").replace(/ University$/, "")
@@ -422,7 +448,7 @@ const pillMetrics = () => [...viewCats().map((c) => c.k), "surplus", "capex"];
 const S = {
   year: YEARS.length - 1, bench: READING, pension: false, surplus: "all", nation: "all", minInc: 100000, pubOnly: true,
   method: "mean", groups: new Set(["Reading comparators (editable)"]), metric: "acad", view: "hesa",
-  inv3: true, detLine: null, target: "sector", custom: new Set(), sort: { k: "acad", dir: -1 }, search: "",
+  inv3: true, detLine: null, staffMetric: "prof", target: "sector", custom: new Set(), sort: { k: "acad", dir: -1 }, search: "",
 };
 try {
   const saved = JSON.parse(localStorage.getItem("ukhe-pfp") || "null");
@@ -1247,8 +1273,78 @@ function lineChart(host, legendEl, series, fmt, zeroBase) {
   bindTips(host);
 }
 
+// ---------- staffing tab
+const pctf = (v) => (finite(v) ? (v * 100).toFixed(1) + "%" : "–");
+const kf = (v) => (finite(v) ? "£" + v.toFixed(1) + "k" : "–");
+const nf1 = (v) => (finite(v) ? v.toFixed(1) : "–");
+const nf2 = (v) => (finite(v) ? v.toFixed(2) : "–");
+// salary per FTE is only used when both academic and non-academic figures look plausible
+const salOK = (s) => s && s.fte_ac > 0 && s.fte_na > 0 && s.sal_ac / s.fte_ac >= 25 && s.sal_ac / s.fte_ac <= 150 && s.sal_na / s.fte_na >= 12 && s.sal_na / s.fte_na <= 90;
+const STAFF_M = [
+  { grp: "Grades (academic staff, headcount)", k: "prof", label: "Professors as % of academic staff", f: (s) => s.st_prof / s.st_tot, fmt: pctf },
+  { k: "senior", label: "Professors + other senior academics %", f: (s) => (s.st_prof + s.st_sen) / s.st_tot, fmt: pctf },
+  { k: "prof_inc", label: "Professors per £10m of income", f: (s, o) => s.st_prof / (o.inc / 10000), fmt: nf1 },
+  { grp: "Workforce size and mix (FTE, from the accounts)", k: "acfte_inc", label: "Academic staff FTE per £10m of income", f: (s, o) => s.fte_ac / (o.inc / 10000), fmt: nf1 },
+  { k: "nafte_inc", label: "Professional & support staff FTE per £10m of income", f: (s, o) => s.fte_na / (o.inc / 10000), fmt: nf1 },
+  { k: "na_per_ac", label: "Professional & support FTE per academic FTE", f: (s) => s.fte_na / s.fte_ac, fmt: nf2 },
+  { grp: "Pay", k: "sal_ac", label: "Average academic salary per FTE (excl. pension and NI)", f: (s) => (salOK(s) ? s.sal_ac / s.fte_ac : NaN), fmt: kf },
+  { k: "sal_na", label: "Average professional & support salary per FTE (excl. pension and NI)", f: (s) => (salOK(s) ? s.sal_na / s.fte_na : NaN), fmt: kf },
+  { k: "hi", label: "Staff earning over £100k per 1,000 staff FTE", f: (s) => { const n = s.hi_fte ?? s.hi_hc; return n == null || !(s.fte_ac + s.fte_na > 0) ? NaN : (n / (s.fte_ac + s.fte_na)) * 1000; }, fmt: nf1 },
+  { grp: "Contracts and roles (academic staff, headcount)", k: "tr", label: "Teaching & research contracts %", f: (s) => s.st_tr / s.st_tot, fmt: pctf },
+  { k: "to", label: "Teaching-only contracts %", f: (s) => s.st_to / s.st_tot, fmt: pctf },
+  { k: "ro", label: "Research-only contracts %", f: (s) => s.st_ro / s.st_tot, fmt: pctf },
+  { k: "fixed", label: "Fixed-term contracts %", f: (s) => s.st_fixed / s.st_tot, fmt: pctf },
+  { k: "pt", label: "Part-time %", f: (s) => s.st_pt / s.st_tot, fmt: pctf },
+  { k: "fem", label: "Women as % of academic staff", f: (s) => s.st_fem / s.st_tot, fmt: pctf },
+];
+function sval(m, id, yi) {
+  const s = STAFF[yi] && STAFF[yi].get(id), o = FIN[yi] && FIN[yi].get(id);
+  if (!s || !o || !(s.st_tot > 0 || s.fte_ac > 0)) return NaN;
+  const v = m.f(s, o);
+  return finite(v) ? v : NaN;
+}
+const svals = (m, list, yi) => list.map((x) => ({ id: x.id, name: x.name || shortName(x.id), val: sval(m, x.id, yi) })).filter((p) => finite(p.val));
+function renderStaffing(U) {
+  const yi = S.year, peers = peerSet(U), bn = shortName(S.bench);
+  document.getElementById("staffPeer").textContent = peers.label;
+  document.getElementById("staffEyebrow").textContent = `${YEARS[yi]} · peers: ${peers.label} · ${U.sector.length} sector providers`;
+  let body = "";
+  for (const m of STAFF_M) {
+    if (m.grp) body += `<tr class="sub"><td colspan="7">${esc(m.grp)}</td></tr>`;
+    const b = sval(m, S.bench, yi), P = svals(m, peers.list, yi), Sx = svals(m, U.sector, yi);
+    const pm = median(P.map((p) => p.v ?? p.val)), sm = median(Sx.map((p) => p.val));
+    const rank = finite(b) ? P.filter((p) => p.val > b).length + 1 : NaN;
+    const rel = finite(b) && finite(pm) && pm !== 0 ? b / pm - 1 : NaN;
+    body += `<tr class="l1${m.k === S.staffMetric ? " is-bench" : ""}" data-sm="${m.k}" style="cursor:pointer"><td>${esc(m.label)}</td><td class="num">${m.fmt(b)}</td><td class="num">${m.fmt(pm)}</td><td class="num">${m.fmt(sm)}</td>` +
+      `<td class="num">${finite(rel) ? (rel >= 0 ? "+" : "−") + Math.abs(rel * 100).toFixed(0) + "%" : "–"}</td><td class="num rk">${finite(rank) ? `${ord(rank)} of ${P.length + 1}` : "–"}</td>` +
+      `<td class="rng">${rangeSvg(P.map((p) => p.val), b, m.label, m.fmt)}</td></tr>`;
+  }
+  const t = document.getElementById("staffTable");
+  t.innerHTML = `<thead><tr><th>Measure</th><th>${esc(bn)}</th><th>${esc(peers.label)}<br><span class="tag">median</span></th><th>Sector<br><span class="tag">median</span></th><th>${esc(bn)} vs peers</th><th>Rank in peers<br><span class="tag">highest = 1st</span></th><th>Peer spread</th></tr></thead><tbody>${body}</tbody>`;
+  t.querySelectorAll("tr[data-sm]").forEach((tr) => (tr.onclick = () => { S.staffMetric = tr.dataset.sm; render(); }));
+  bindTips(t);
+  document.getElementById("staffKey").innerHTML = spreadKey();
+  // charts for selected measure
+  const m = STAFF_M.find((x) => x.k === S.staffMetric) || STAFF_M[0];
+  document.getElementById("fStaffMetric").innerHTML = STAFF_M.map((x) => `<option value="${x.k}" ${x.k === m.k ? "selected" : ""}>${esc(x.label)}</option>`).join("");
+  document.getElementById("staffMetricTitle").textContent = m.label;
+  const rows = compRows(U).filter((r) => r.kind !== "bench" && r.list.length)
+    .map((r) => ({ label: r.label, color: r.kind === "sector" ? "--sector" : "--group", pts: svals(m, r.list, yi) }));
+  stripChart(document.getElementById("staffStrip"), rows, sval(m, S.bench, yi), bn, m.fmt, `${esc(m.label)}, ${YEARS[yi]}.`);
+  const series = [{ label: bn, color: "--accent", w: 2.5, pts: [] }, { label: peers.label + " median", color: "--group", w: 2, pts: [] }, { label: "Sector median", color: "--sector", w: 2, dash: "5 4", pts: [] }];
+  YEARS.forEach((y, yj) => {
+    const Uj = universe(yj), Pj = peerSet(Uj);
+    series[0].pts.push(sval(m, S.bench, yj));
+    series[1].pts.push(median(svals(m, Pj.list, yj).map((p) => p.val)));
+    series[2].pts.push(median(svals(m, Uj.sector, yj).map((p) => p.val)));
+  });
+  lineChart(document.getElementById("staffTrend"), document.getElementById("staffTrendLegend"), series, m.fmt, true);
+  document.getElementById("staffNote").textContent = "Grades, contracts and roles come from HESA Staff Table 7 (academic staff headcount, excluding atypical staff). FTE, salaries and staff earning over £100k come from HESA Finance Table 12 (from 2017/18; salaries exclude employer pension and National Insurance). Salary measures are left blank in years where a provider's academic/non-academic salary split looks implausible. Staff earning over £100k are reported as FTE in England and headcount in Wales and Northern Ireland; Scottish providers don't report them.";
+}
+document.getElementById("fStaffMetric").onchange = (e) => { S.staffMetric = e.target.value; render(); };
+
 // ---------- tabs
-const TABS = ["overview", "detail"];
+const TABS = ["overview", "detail", "staffing"];
 let TAB = "overview";
 try { const h = location.hash.slice(1); TAB = TABS.includes(h) ? h : localStorage.getItem("ukhe-pfp-tab") || "overview"; } catch (e) {}
 function setTab(t) {
@@ -1282,6 +1378,7 @@ function render() {
   const U = universe(S.year); lastU = U;
   renderGroupChips(U); renderStatus(U);
   if (TAB === "detail") renderDetail(U);
+  else if (TAB === "staffing") renderStaffing(U);
   else { renderMetricPills(); renderTiles(U); renderSplit(U); renderStrip(U); renderTrend(); renderInvest(U); renderLeague(U); }
   if (document.getElementById("customBox").open) renderPicker();
 }

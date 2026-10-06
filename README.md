@@ -8,7 +8,8 @@ Built from public HESA open data (CC BY 4.0). Not an official University of Read
 
 ## Getting the raw data
 The raw HESA files (~1GB) are not in the repo. Download them from hesa.ac.uk into `data/raw/`:
-- Finance tables: `https://www.hesa.ac.uk/data-and-analysis/finances/table-N` for N = 1, 6, 7, 8, 9, 14 (save as `hesa-fin-table-N.csv`, or unzip `table-N.zip` into `hesa-fin-table-N/`)
+- Finance tables: `https://www.hesa.ac.uk/data-and-analysis/finances/table-N` for N = 1, 6, 7, 8, 9, 12, 14 (save as `hesa-fin-table-N.csv`, or unzip `table-N.zip` into `hesa-fin-table-N/`)
+- Staff Table 7: `https://www.hesa.ac.uk/data-and-analysis/staff/table-7.zip`, unzipped into `hesa-staff-table-7/`
 
 ## Rebuild
 
@@ -45,6 +46,7 @@ Providers with income ≥ £100m that are publicly funded (funding council grant
 
 ## Tabs
 1. **Overview** – the eight HESA activities per £1 of income, with all peer-group, year and filter options.
+3. **Staffing** – academic grades (professor and senior share), contracts and roles from Staff Table 7; staff FTE, average salaries and staff earning over £100k from Finance Table 12. Medians throughout.
 2. **Institution detail** – each activity broken into Table 8 activity lines and cost types; research cost recovery; residences and catering net of income (Table 7); whole-institution staff ratios.
 
 Subject-level analysis was trialled and removed: HESA doesn't publish income by subject, so per-subject efficiency relied on modelled income and was judged too uncertain to share.
