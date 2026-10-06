@@ -9,6 +9,7 @@ Inputs: HESA Finance open data (CC-BY-4.0) in data/raw/
   Table 14 - key financial indicators (context)
   Table 12 - staff FTE, salaries and staff earning over £100k (staffing tab)
   Staff Table 7 - academic staff by contract level, function, terms and mode (staffing tab)
+  Staff Table 1 - all staff by occupation (SOC), incl. managers and non-academic staff mix (staffing tab)
 Plus data/mission_groups.csv (editable membership list).
 
 All money values are £000s. Output: data/dashboard_data.json
@@ -210,10 +211,25 @@ for f in sorted(glob.glob(str(RAW / "hesa-staff-table-7" / "*.csv"))):
     m = t[(t["Mode of employment"] == "Part-time") & (t["Category"] == "Total academic staff")].assign(k="st_pt")
     t7rows.append(pd.concat([a, m]).rename(columns={"Academic Year": "Academic year"}))
 t7 = pd.concat(t7rows).pivot_table(index=["UKPRN", "Academic year"], columns="k", values="v", aggfunc="first")
-staff = staff.join(t7, how="outer").reset_index()
+# Staff Table 1: headcount by occupation (non-academic data is suppressed for providers that opted out)
+T1 = {("Non-academic", "Managers, directors and senior officials"): "na_mgr", ("Academic", "Managers, directors and senior officials"): "ac_mgr",
+      ("Non-academic", "Professional occupations"): "na_prof", ("Non-academic", "Associate professional occupations"): "na_assoc",
+      ("Non-academic", "Administrative and secretarial occupations"): "na_admin", ("Non-academic", "Skilled trades occupations"): "na_trades",
+      ("Non-academic", "Elementary occupations"): "na_elem", ("Non-academic", "Total non-academic staff"): "na_tot",
+      ("Non-academic", "Clerical and manual occupations"): "na_cler"}
+f1 = RAW / "hesa-staff-table-1" / "table-1.csv"
+lines = f1.read_text(encoding="utf-8-sig").splitlines()
+t1 = pd.read_csv(f1, skiprows=next(i for i, l in enumerate(lines[:60]) if l.startswith("UKPRN")), dtype=str, encoding="utf-8-sig")
+t1 = t1[(t1["Country of HE provider"] == "All") & (t1["Region of HE provider"] == "All")
+        & (t1["Mode of employment"] == "All") & (t1["Atypical marker"] == "Non-atypical")]
+t1 = t1.assign(v=pd.to_numeric(t1["Number"].str.replace(",", ""), errors="coerce"),
+               k=[T1.get((a, c)) for a, c in zip(t1["Academic marker"], t1["Activity standard occupational classification"])])
+t1 = t1.dropna(subset=["k"]).pivot_table(index=["UKPRN", "Academic year"], columns="k", values="v", aggfunc="first")
+staff = staff.join(t7, how="outer").join(t1, how="outer").reset_index()
 staff = staff[staff["Academic year"].isin(yi) & staff["UKPRN"].isin(set(fin["UKPRN"]))]
 STAFF_COLS = ["st_tot", "st_prof", "st_sen", "st_oth", "st_tr", "st_ro", "st_to", "st_fixed", "st_fem", "st_pt",
-              "sal_ac", "sal_na", "fte_ac", "fte_na", "hi_fte", "hi_hc"]
+              "sal_ac", "sal_na", "fte_ac", "fte_na", "hi_fte", "hi_hc",
+              "na_mgr", "ac_mgr", "na_prof", "na_assoc", "na_admin", "na_trades", "na_elem", "na_cler", "na_tot"]
 for c in STAFF_COLS:
     if c not in staff:
         staff[c] = None
